@@ -1,14 +1,16 @@
 Name:           intel-aes
 Version:        0.1.1
 
-License: BSD3
-License-file:   LICENSE
-Stability: Beta
+License:                BSD3
+License-file:           LICENSE
+Stability:              Beta
 Author:			Ryan Newton <rrnewton@gmail.com>
 Maintainer:		Ryan Newton <rrnewton@gmail.com>
 Copyright:              Copyright (c) 2011 Intel Corporation
-Synopsis: AES encryption with hardware acceleration.  Plus,
-          statistically sound, splittable random number generation based on AES.
+Synopsis: Hardware accelerated AES encryption and RNG.
+Description: 
+             AES encryption with hardware acceleration.  Plus,
+             statistically sound, splittable random number generation based on AES.
 
 Category: Cryptography
 Cabal-Version: >=1.6
@@ -20,9 +22,18 @@ source-repository head
   location: git://github.com/rrnewton/intel-aes.git
 
 library
-  build-depends:  base, Crypto
+  build-depends:  base, random, DRBG, split
+--  Crypto, -- Cloning this dependency for now.
 
   exposed-modules:  Codec.Encryption.BurtonRNGSlow
   extensions: 
   GHC-Options: -O2 		    
 
+Executable benchmark-intel-aes-rng
+  Main-is:        SimpleRNGBench.hs
+  Build-Depends:  base, split, rdtsc, unix
+--  GHC-Options:    -O2 
+  GHC-Options:    -O2 -threaded 
+
+
+--    cabal haddock --hoogle --executables --hyperlink-source

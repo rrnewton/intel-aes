@@ -1,6 +1,13 @@
 
 The haskell source code in this package is licensed under a BSD3 license (listed below).
 
+Note, right now this package also includes a copy of just a few files
+from Dominic Steinitz's Crypto library.  This is hopefully temporary
+-- a minor API change is the only reason for the duplication.
+However, I verified that the included files ALSO have a BSD license.
+
+-Ryan Newton
+
 
 BSD3 Full Text:
 --------------------------------------------------------------------------------

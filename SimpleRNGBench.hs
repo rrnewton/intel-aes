@@ -9,6 +9,7 @@ import Codec.Encryption.BurtonRNGSlow as BS
 
 import System.Random
 import System.Posix (sleep)
+import System.CPUTime (getCPUTime)
 
 import System.CPUTime.Rdtsc
 import Control.Concurrent
@@ -17,6 +18,7 @@ import Control.Concurrent.Chan
 import Control.Exception
 import Data.IORef
 import Data.List
+import Data.Int
 import Data.List.Split
 import Text.Printf
 
@@ -58,18 +60,10 @@ instance RandomGen NoopRNG where
 
 timeone freq msg mkgen =
   do counter :: IORef Int <- newIORef 1
---     cycles1 <- rdtsc
-     tid <- forkIO $ 
---     tid <- forkOS $ 
-	      loop counter (next$ mkgen 23852358661234)   
+     tid <- forkIO $ loop counter (next$ mkgen 23852358661234)   
      threadDelay (1000*1000) -- One second
---     cycles2 <- rdtsc  -- Weird, this seems to go INSANE after thread delay.
      killThread tid
      total <- readIORef counter
-
---     let cycles_per :: Double = fromIntegral (if cycles2>cycles1 then cycles2-cycles1 else cycles1-cycles2) / fromIntegral total
-     -- putStrLn$ "       cycles1/cycles2: " ++ show (cycles1, cycles2)
-     -- putStrLn$ "       ELAPSED " ++ show cycles_per
 
      let cycles_per :: Double = fromIntegral freq / fromIntegral total
          cycles_per_str = if cycles_per < 100 
@@ -80,9 +74,50 @@ timeone freq msg mkgen =
 	       ++ cycles_per_str ++" cycles/int"
 
 
+-- WARNING! This is not actually good enough.  Even if we use forkOS
+-- we would have to go further and pin the OS thread (e.g. in linux)
+-- to keep the OS from waking up the process on a different core.
+measure_freq :: IO Int64
+measure_freq = do 
+   -- We measure the clock frequency on a bound thread.
+   -- Otherwise we can get really screwy results from rdtsc if we
+   -- migrate physical threads when we sleep or threadDelay.
+   tmpchan <- newChan
+   forkOS $ do 
+      t1 <- rdtsc
+      -- sleep 1
+      threadDelay (1000*1000)
+      t2 <- rdtsc
+      -- Just to be careful let's make sure this doesn't happen (this was how I found the problem before forkOS):
+      when (t2 < t1) $ 
+        putStrLn$ "WARNING: rdtsc not monotonically increasing, first "++show t1++" then "++show t2++" on the same OS thread"
+      writeChan tmpchan (if t2>t1 then t2-t1 else t1-t2)
+   freq <- readChan tmpchan
+   return (fromIntegral freq)
 
---measure_freq = do 
+-- This version simply busy-waits to stay on the same core:
+-- WOW! I'm STILL experiencing the non-monotonic rdtsc, even when not compiled with -threaded.
+-- It can't be overflow can it?  The counter should be 64 bit...
+measure_freq2 :: IO Int64
+measure_freq2 = do 
+  let second = 1000 * 1000 * 1000 * 1000 -- picoseconds are annoying
+  t1 <- rdtsc 
+  start <- getCPUTime
+  let loop !n !last = 
+       do t2 <- rdtsc 
+	  when (t2 < last) $
+	       putStrLn$ "COUNTERS WRAPPED "++ show (last,t2) 
+	  cput <- getCPUTime		
+	  if (cput - start < second) 
+	   then loop (n+1) t2
+	   else return (n,t2)
+  (n,t2) <- loop 0 t1
+  putStrLn$ "  Approx getCPUTime calls per second: "++ commaint n
+  when (t2 < t1) $ 
+    putStrLn$ "WARNING: rdtsc not monotonically increasing, first "++show t1++" then "++show t2++" on the same OS thread"
 
+  return$ fromIntegral (t2 - t1)
+  
 main = do 
 
    putStrLn$ "How many random numbers can we generate in a second on one thread?"
@@ -91,27 +126,14 @@ main = do
    t2 <- rdtsc
    putStrLn ("  Cost of rdtsc (ffi call):    " ++ show (t2 - t1))
 
-   -- We measure the clock frequency on a bound thread.
-   -- Otherwise we can get really screwy results from rdtsc if we
-   -- migrate physical threads when we sleep or threadDelay.
-   tmpchan <- newChan
-   forkOS $ do 
-      t1 <- rdtsc
-      sleep 1
-      t2 <- rdtsc
-      -- Just to be careful let's make sure this doesn't happen (this was how I found the problem before forkOS):
-      when (t2 < t1) $ 
-        putStrLn$ "WARNING: rdtsc not monotonically increasing, first "++show t1++" then "++show t2++" on the same OS thread"
-      writeChan tmpchan (if t2>t1 then t2-t1 else t1-t2)
-   freq <- readChan tmpchan
+   freq <- measure_freq2
    putStrLn$ "  Approx clock frequency:  " ++ commaint freq
 
    putStrLn$ "  First, timing with System.Random interface:"
    timeone freq "constant zero gen" (const NoopRNG)
    timeone freq "System.Random stdGen" mkStdGen
    timeone freq "BurtonGenSlow/reference" mkBurtonGen_reference
-
---   timeone freq "BurtonGenSlow" mkBurtonGen
+   timeone freq "BurtonGenSlow" mkBurtonGen
 
    putStrLn$ "Finished."
 

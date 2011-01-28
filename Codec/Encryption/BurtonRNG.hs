@@ -17,5 +17,6 @@ import System.Random ()
 import Crypto.Random.DRBG ()
 
 
+mkBurtonGen = undefined
 
 -- UNFINISHED
