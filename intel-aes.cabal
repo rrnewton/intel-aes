@@ -1,0 +1,28 @@
+Name:           intel-aes
+Version:        0.1.1
+
+License: BSD3
+License-file:   LICENSE
+Stability: Beta
+Author:			Ryan Newton <rrnewton@gmail.com>
+Maintainer:		Ryan Newton <rrnewton@gmail.com>
+Copyright:              Copyright (c) 2011 Intel Corporation
+Synopsis: AES encryption with hardware acceleration.  Plus,
+          statistically sound, splittable random number generation based on AES.
+
+Category: Cryptography
+Cabal-Version: >=1.6
+
+build-type: Simple
+
+source-repository head
+  type:     git
+  location: git://github.com/rrnewton/intel-aes.git
+
+library
+  build-depends:  base, Crypto
+
+  exposed-modules:  Codec.Encryption.BurtonRNGSlow
+  extensions: 
+  GHC-Options: -O2 		    
+
