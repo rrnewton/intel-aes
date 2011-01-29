@@ -24,3 +24,162 @@ New numbers:
          16,052 random ints generated [BurtonGenSlow/reference]   ~ 205,226 cycles/int
          32,411 random ints generated [BurtonGenSlow]             ~ 101,641 cycles/int
 
+
+
+[2011.01.29] {First results}
+
+This is what I'm getting (3.33 ghz nehalem) on a single thread compiled without -threaded:
+
+    How many random numbers can we generate in a second on one thread?
+      Cost of rdtsc (ffi call):    83
+      Approx getCPUTime calls per second: 205,640
+      Approx clock frequency:  3,306,891,339
+      First, timing with System.Random interface:
+	193,178,901 random ints generated [constant zero gen]         ~ 17.12 cycles/int
+	 14,530,358 random ints generated [System.Random stdGen]      ~ 228 cycles/int
+	     16,346 random ints generated [BurtonGenSlow/reference]   ~ 202,306 cycles/int
+	     32,965 random ints generated [BurtonGenSlow]             ~ 100,315 cycles/int
+      Comparison to C's rand():
+	118,766,285 random ints generated [rand/store in C loop]      ~ 27.84 cycles/int
+	114,668,028 random ints generated [rand / Haskell loop]       ~ 28.84 cycles/int
+	114,675,116 random ints generated [rand/store Haskell]        ~ 28.84 cycles/int
+
+And with -threaded but a single thread (no -N argument):
+
+    How many random numbers can we generate in a second on one thread?
+      Cost of rdtsc (ffi call):    83
+      Approx getCPUTime calls per second: 226,961
+      Approx clock frequency:  3,306,672,915
+      First, timing with System.Random interface:
+	177,617,807 random ints generated [constant zero gen]         ~ 18.62 cycles/int
+	 13,603,612 random ints generated [System.Random stdGen]      ~ 243 cycles/int
+	     15,314 random ints generated [BurtonGenSlow/reference]   ~ 215,925 cycles/int
+	     31,241 random ints generated [BurtonGenSlow]             ~ 105,844 cycles/int
+      Comparison to C's rand():
+	 57,296,260 random ints generated [rand/store in C loop]      ~ 57.71 cycles/int
+	 63,888,404 random ints generated [rand / Haskell loop]       ~ 51.76 cycles/int
+	 62,688,727 random ints generated [rand/store Haskell]        ~ 52.75 cycles/int
+    Finished.
+
+Wow... the foreign versions take a big hit from -threaded.
+
+Ack, perhaps worse, with -N4 but only a single threaded *workload* we run into problems:
+
+    How many random numbers can we generate in a second on one thread?
+      Cost of rdtsc (ffi call):    317
+      Approx getCPUTime calls per second: 154,859
+      Approx clock frequency:  2,797,993,233
+      First, timing with System.Random interface:
+	 12,774,233 random ints generated [constant zero gen]         ~ 219 cycles/int
+	  8,211,430 random ints generated [System.Random stdGen]      ~ 341 cycles/int
+	      4,990 random ints generated [BurtonGenSlow/reference]   ~ 560,720 cycles/int
+	     18,429 random ints generated [BurtonGenSlow]             ~ 151,826 cycles/int
+      Comparison to C's rand():
+	540,942,561 random ints generated [ptr store in C loop]       ~ 5.17 cycles/int
+	 56,722,299 random ints generated [rand/store in C loop]      ~ 49.33 cycles/int
+	 63,173,134 random ints generated [rand / Haskell loop]       ~ 44.29 cycles/int
+	 61,999,404 random ints generated [rand/store Haskell]        ~ 45.13 cycles/int
+
+It doesn't measure the clock frequency accurately in this mode!
+I can't understand why that would be... but thread migration may be the culprit.
+Yet -qm and -qa don't fix the problem at all...
+
+Apparently -N4 also suffers from HIGH VARIANCE in throughput (which is
+independent of the cpu frequency measurement... though it does mean
+that the cycles/int numbers are bogus below).
+
+     31,413,439 random ints generated [constant zero gen]         ~ 87.08 cycles/int
+      8,999,510 random ints generated [System.Random stdGen]      ~ 304 cycles/int
+         11,755 random ints generated [BurtonGenSlow/reference]   ~ 232,703 cycles/int
+            367 random ints generated [BurtonGenSlow]             ~ 7,453,473 cycles/int
+
+     41,861,866 random ints generated [constant zero gen]         ~ 47.84 cycles/int
+      8,073,351 random ints generated [System.Random stdGen]      ~ 248 cycles/int
+         11,850 random ints generated [BurtonGenSlow/reference]   ~ 168,992 cycles/int
+         19,853 random ints generated [BurtonGenSlow]             ~ 100,869 cycles/int
+ 
+     12,774,233 random ints generated [constant zero gen]         ~ 219 cycles/int
+       8,211,430 random ints generated [System.Random stdGen]      ~ 341 cycles/int
+	   4,990 random ints generated [BurtonGenSlow/reference]   ~ 560,720 cycles/int
+	  18,429 random ints generated [BurtonGenSlow]             ~ 151,826 cycles/int
+
+Presumably some of this is because of attempted sparking gone awry?
+
+--------------------------------------------------------------------------------
+ MULTI-THREADED MEASUREMENTS
+--------------------------------------------------------------------------------
+
+I'm starting to measure 4-thread performance (all threads generating
+randoms), and I'm about to switch to looking at per-thread throughput,
+but first here's aggregate throughput.  Kind of surprising, right?
+The reference version is doing better all of a sudden.
+
+	179,217,901 random ints generated [constant zero gen]         ~ 10.80 cycles/int
+	 49,573,433 random ints generated [System.Random stdGen]      ~ 39.05 cycles/int
+	     69,093 random ints generated [BurtonGenSlow/reference]   ~ 28,020 cycles/int
+	     44,454 random ints generated [BurtonGenSlow]             ~ 43,550 cycles/int
+    Comparison to C's rand():
+	  6,450,217 random ints generated [rand/store in C loop]      ~ 384 cycles/int
+	  8,589,888 random ints generated [rand / Haskell loop]       ~ 289 cycles/int
+	  4,038,556 random ints generated [rand/store Haskell]        ~ 614 cycles/int
+
+And the foreign/rand version took a MASSIVE hit, which doesn't make
+that much sense, especially for the first variant.  I forg
+
+--------------------------------------------------------------------------------
+ NOW SWITCHING TO MEAN PER-THREAD THROUGHPUT, NORMALIZED TO NUMTHREADS
+--------------------------------------------------------------------------------
+
+These numbers are not looking bad for the pure haskell versions.
+Pretty much keeping all four CPUs busy.  C's rand is not supposed to
+be reentrant so it doesn't really matter.
+
+Beware the incorrect clock frequency:
+
+    How many random numbers can we generate in a second on one thread?
+      Cost of rdtsc (ffi call):    228
+      Approx getCPUTime calls per second: 134,849
+      Approx clock frequency:  2,478,290,084
+
+    Now 4 threads, reporting mean randoms-per-second-per-thread:
+      First, timing with System.Random interface:
+	 46,142,182 random ints generated [constant zero gen]         ~ 54.48 cycles/int
+	  9,957,644 random ints generated [System.Random stdGen]      ~ 252 cycles/int
+	     14,146 random ints generated [BurtonGenSlow/reference]   ~ 177,683 cycles/int
+	     29,046 random ints generated [BurtonGenSlow]             ~ 86,539 cycles/int
+      Comparison to C's rand():
+	441,296,179 random ints generated [ptr store in C loop]       ~ 5.70 cycles/int
+	  1,488,240 random ints generated [rand/store in C loop]      ~ 1,689 cycles/int
+	  1,443,434 random ints generated [rand / Haskell loop]       ~ 1,741 cycles/int
+	  1,725,817 random ints generated [rand/store Haskell]        ~ 1,456 cycles/int
+
+I don't know why the "reference" version seemed to be doing better
+above... now it's back to its old pattern.
+
+I'm still seeing a fair amount of variance even with the
+all-threads-working workload.  For example, the same run as did 29K
+BurtonGenSlow above, can also give me:
+
+     47,082,714 random ints generated [constant zero gen]         ~ 58.68 cycles/int
+     10,789,920 random ints generated [System.Random stdGen]      ~ 256 cycles/int
+         11,917 random ints generated [BurtonGenSlow/reference]   ~ 231,843 cycles/int
+         23,854 random ints generated [BurtonGenSlow]             ~ 115,824 cycles/int
+
+     15,289,001 random ints generated [constant zero gen]         ~ 162 cycles/int
+       3,586,250 random ints generated [System.Random stdGen]      ~ 693 cycles/int
+	   4,487 random ints generated [BurtonGenSlow/reference]   ~ 553,683 cycles/int
+	   8,994 random ints generated [BurtonGenSlow]             ~ 276,241 cycles/int
+
+The variance doesn't seem to correlate with mutator PRODUCTIVITY.
+Productivity is pretty good (92%) on the haskell-only part of the
+benchmarks.
+
+			   MUT time (elapsed)       GC time  (elapsed)
+      Task  0 (worker) :   16.84s    (  4.46s)       0.00s    (  0.00s)
+      Task  1 (worker) :   16.84s    (  4.46s)       0.00s    (  0.00s)
+      Task  2 (bound)  :   16.77s    (  4.46s)       0.07s    (  0.02s)
+      Task  3 (worker) :   16.38s    (  4.46s)       0.46s    (  0.15s)
+      Task  4 (worker) :   16.84s    (  4.46s)       0.00s    (  0.00s)
+      Task  5 (worker) :   16.05s    (  4.46s)       0.78s    (  0.23s)
+
+

@@ -64,7 +64,7 @@ binSearch verbose trials (min,max) kernel =
 	 --loop :: Bool -> [String] -> Int -> Integer -> IO ()
 
 	 -- At some point we must give up...
-	 loop n | n > (2 ^ 100) = error "This function doesn't seem to scale in proportion to its last argument."
+	 loop n | n > (2 ^ 100) = error "ERROR binSearch: This function doesn't seem to scale in proportion to its last argument."
 
 	 -- Not allowed to have "0" size input, bump it back to one:
 	 loop 0 = loop 1

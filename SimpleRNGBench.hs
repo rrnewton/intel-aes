@@ -5,36 +5,39 @@
 --   It is important that we also run established stastical tests on
 --   these RNGs a some point...
 
+module Main where
+
 import Codec.Encryption.BurtonRNGSlow as BS
 
+import System.Exit (exitSuccess, exitFailure)
+import System.Environment
 import System.Random
-import System.Posix (sleep)
-import System.CPUTime (getCPUTime)
-
+import System.Posix    (sleep)
+import System.CPUTime  (getCPUTime)
+-- import Data.Time.Clock (diffUTCTime)
 import System.CPUTime.Rdtsc
+import System.Console.GetOpt
+
+import GHC.Conc
 import Control.Concurrent
-import Control.Monad (when)
+import Control.Monad 
 import Control.Concurrent.Chan
 import Control.Exception
+
 import Data.IORef
 import Data.List
 import Data.Int
 import Data.List.Split
 import Text.Printf
 
-loop :: RandomGen g => IORef Int -> (Int,g) -> IO b
-loop !counter !(!n,!g) = 
-  do -- modifyIORef counter (+1)d
-     -- Incrementing counter strictly (avoiding stack overflow) is annoying:
-     c <- readIORef counter
-     let c' = c+1
-     evaluate c'
-     writeIORef counter c'
-     
---     putStr (show n); putChar ' '
-     loop counter (next g)
+import Foreign.Ptr
+import Foreign.ForeignPtr
+import Foreign.Storable (peek,poke)
 
-data NoopRNG = NoopRNG
+import Benchmark.BinSearch
+
+----------------------------------------------------------------------------------------------------
+-- Miscellaneous helpers:
 
 -- I cannot *believe* there is not a standard call or an
 -- easily-findable hackage library supporting locale-based printing of
@@ -53,26 +56,9 @@ padleft n str | otherwise       = take (n - length str) (repeat ' ') ++ str
 padright n str | length str >= n = str
 padright n str | otherwise       = str ++ take (n - length str) (repeat ' ')
 
-
-instance RandomGen NoopRNG where 
-  split g = (g,g)
-  next g  = (0,g)
-
-timeone freq msg mkgen =
-  do counter :: IORef Int <- newIORef 1
-     tid <- forkIO $ loop counter (next$ mkgen 23852358661234)   
-     threadDelay (1000*1000) -- One second
-     killThread tid
-     total <- readIORef counter
-
-     let cycles_per :: Double = fromIntegral freq / fromIntegral total
-         cycles_per_str = if cycles_per < 100 
-			  then printf "%.2f" cycles_per
-			  else commaint (round cycles_per)
-
-     putStrLn$ "    "++ padleft 11 (commaint total) ++" random ints generated "++ padright 27 ("["++msg++"]") ++" ~ "
-	       ++ cycles_per_str ++" cycles/int"
-
+fmt_num n = if n < 100 
+	    then printf "%.2f" n
+	    else commaint (round n)
 
 -- WARNING! This is not actually good enough.  Even if we use forkOS
 -- we would have to go further and pin the OS thread (e.g. in linux)
@@ -98,6 +84,8 @@ measure_freq = do
 -- This version simply busy-waits to stay on the same core:
 -- WOW! I'm STILL experiencing the non-monotonic rdtsc, even when not compiled with -threaded.
 -- It can't be overflow can it?  The counter should be 64 bit...
+--
+-- UPDATE: [2011.01.28] This was a bug in the rdtsc package that dropping the precision to 32 bits.
 measure_freq2 :: IO Int64
 measure_freq2 = do 
   let second = 1000 * 1000 * 1000 * 1000 -- picoseconds are annoying
@@ -117,10 +105,181 @@ measure_freq2 = do
     putStrLn$ "WARNING: rdtsc not monotonically increasing, first "++show t1++" then "++show t2++" on the same OS thread"
 
   return$ fromIntegral (t2 - t1)
+
+----------------------------------------------------------------------------------------------------
+-- Drivers to get random numbers repeatedly.
+
+incr !counter = 
+  do -- modifyIORef counter (+1)d
+     -- Incrementing counter strictly (avoiding stack overflow) is annoying:
+     c <- readIORef counter
+     let c' = c+1
+     evaluate c'
+     writeIORef counter c'     
+
+loop :: RandomGen g => IORef Int -> (Int,g) -> IO b
+loop !counter !(!n,!g) = 
+  do incr counter
+--     putStr (show n); putChar ' '
+     loop counter (next g)
+
+data NoopRNG = NoopRNG
+instance RandomGen NoopRNG where 
+  split g = (g,g)
+  next g  = (0,g)
+
+--foreign import ccall "cbits/c_test.c" blast_rands :: Ptr Int -> Ptr Int -> IO ()
+
+type Kern = Int -> Ptr Int -> IO ()
+
+-- [2011.01.28] Changing this to take "count" and "accumulator ptr" as arguments:
+foreign import ccall "cbits/c_test.c" blast_rands :: Kern
+foreign import ccall "cbits/c_test.c" store_loop  :: Kern
+foreign import ccall unsafe "stdlib.hs" rand :: IO Int
+
+loop2 :: IORef Int -> IO ()
+loop2 !counter = 
+  do incr counter
+     n <- rand
+     loop2 counter 
+
+
+----------------------------------------------------------------------------------------------------
+-- Timing:
+
+timeit numthreads freq msg mkgen =
+  do 
+     counters <- forM [1..numthreads] (const$ newIORef 1) 
+     tids <- forM counters $ \counter -> 
+	        forkIO $ loop counter (next$ mkgen 23852358661234)   
+     threadDelay (1000*1000) -- One second
+     mapM_ killThread tids
+
+     finals <- mapM readIORef counters
+     let mean :: Double = fromIntegral (foldl1 (+) finals) / fromIntegral numthreads
+         cycles_per :: Double = fromIntegral freq / mean
+     print_result (round mean) msg cycles_per
+
+print_result total msg cycles_per = 
+     putStrLn$ "    "++ padleft 11 (commaint total) ++" random ints generated "++ padright 27 ("["++msg++"]") ++" ~ "
+	       ++ fmt_num cycles_per ++" cycles/int"
+
+
+-- FIXME: This isn't working yet because when the C call goes into a tight infinite loop killThread hangs...
+-- KEEPING AROUND ONLY FOR FUTURE INVESTIGATION
+------------------------------------------------------------
+time_c :: Int -> Int64 -> (Ptr Int -> Ptr Int -> IO ()) -> IO Int
+time_c numthreads freq ffn = do 
+  counter :: ForeignPtr Int <- mallocForeignPtr
+  sum     :: ForeignPtr Int <- mallocForeignPtr
+  tid <- forkOS $ 
+	 withForeignPtr counter $ \ cntr ->
+	 withForeignPtr sum $ \ sm ->
+          ffn cntr sm
+  threadDelay (1000*1000) -- One second
+  stat <- threadStatus tid
+  putStrLn$ "Thread making foreign call's status: "++ show stat
+  putStrLn$ "Killing thread running the foreign C call...\n"
+  killThread tid -- This will hang!!!
+  putStrLn$ "Killed.\n"
+  total <- withForeignPtr counter peek 
+  putStrLn$ "Got total: " ++ show total
+  return total
+------------------------------------------------------------
+
+
+-- This version flips things around, and assume something about the
+-- timing so that we can run a fixed number of randoms and time it.
+-- (We could do binary search here.)
+time_c2 :: Int -> Int64 -> String -> (Int -> Ptr Int -> IO ()) -> IO Int
+time_c2 numthreads freq msg ffn = do 
+  ptr     :: ForeignPtr Int <- mallocForeignPtr
+
+  let kern = if numthreads == 1
+	     then ffn
+	     else replicate_kernel numthreads ffn 
+      wrapped n = withForeignPtr ptr (kern$ fromIntegral n)
+  (n,t) <- binSearch False 1 (1.0, 1.05) wrapped
+
+  -- ONLY if we're in multi-threaded mode do we then run again with
+  -- that input size on all threads:
+----------------------------------------
+-- NOTE, this approach is TOO SLOW.  For workloads that take a massive
+-- parallel slowdown it doesn't make sense to use the same input size
+-- in serial and in parallel.
+-- DISABLING:
+{-
+  (n2,t2) <- 
+    if numthreads > 1 then do
+      ptrs <- mapM (const mallocForeignPtr) [1..numthreads]
+      tmpchan <- newChan
+      putStrLn$ "       [forking threads for multithreaded measurement, input size "++ show n++"]"
+      start <- getCPUTime
+      tids <- forM ptrs $ \ptr -> forkIO $ 
+	       do withForeignPtr ptr (ffn$ fromIntegral n)
+		  writeChan tmpchan ()     
+      forM ptrs $ \_ -> readChan tmpchan
+      end <- getCPUTime
+      let t2 :: Double = fromIntegral (end-start) / 1000000000000.0
+      putStrLn$ "       [joined threads, time "++ show t2 ++"]"
+      return (n * fromIntegral numthreads, t2)
+    else do 
+      return (n,t)
+-}
+----------------------------------------
+
+  let total_per_second = round $ fromIntegral n * (1 / t)
+      cycles_per = fromIntegral freq * t / fromIntegral n
+  print_result total_per_second msg cycles_per
+  return total_per_second
+
+-- This lifts the C kernel to operate 
+replicate_kernel :: Int -> Kern -> Kern
+replicate_kernel numthreads kern n ptr = do
+  ptrs <- forM [1..numthreads]
+	    (const mallocForeignPtr) 
+  tmpchan <- newChan
+  -- let childwork = ceiling$ fromIntegral n / fromIntegral numthreads
+  let childwork = n -- Keep it the same.. interested in per-thread throughput.
+  -- Fork/join pattern:
+  tids <- forM ptrs $ \ptr -> forkIO $ 
+	   withForeignPtr ptr $ \p -> do
+	      kern (fromIntegral childwork) p
+	      result <- peek p
+	      writeChan tmpchan result
+
+  results <- forM [1..numthreads] $ \_ -> 
+	       readChan tmpchan
+  -- Meaningless semantics here... sum the child ptrs and write to the input one:
+  poke ptr (foldl1 (+) results)
+  return ()
+
+----------------------------------------------------------------------------------------------------
+-- Main Script
+
+data Flag = NoC | Help
+  deriving (Show, Eq)
+
+options = 
+   [ Option ['h']  ["help"]  (NoArg Help)  "print program help"
+   , Option []     ["noC"]   (NoArg NoC)   "omit C tests, haskell only"
+   ]
+
   
 main = do 
+   argv <- getArgs
+   let (opts,_,other) = getOpt Permute options argv
 
-   putStrLn$ "How many random numbers can we generate in a second on one thread?"
+   when (not$ null other) $ do
+       putStrLn$ "ERROR: Unrecognized options: " 
+       mapM_ putStr other
+       exitFailure
+
+   when (Help `elem` opts) $ do
+       putStr$ usageInfo "Benchmark random number generation" options
+       exitSuccess
+
+   putStrLn$ "\nHow many random numbers can we generate in a second on one thread?"
 
    t1 <- rdtsc
    t2 <- rdtsc
@@ -129,11 +288,28 @@ main = do
    freq <- measure_freq2
    putStrLn$ "  Approx clock frequency:  " ++ commaint freq
 
-   putStrLn$ "  First, timing with System.Random interface:"
-   timeone freq "constant zero gen" (const NoopRNG)
-   timeone freq "System.Random stdGen" mkStdGen
-   timeone freq "BurtonGenSlow/reference" mkBurtonGen_reference
-   timeone freq "BurtonGenSlow" mkBurtonGen
+   let gamut th = do
+       putStrLn$ "  First, timing with System.Random interface:"
+       timeit th freq "constant zero gen" (const NoopRNG)
+       timeit th freq "System.Random stdGen" mkStdGen
+       timeit th freq "BurtonGenSlow/reference" mkBurtonGen_reference
+       timeit th freq "BurtonGenSlow" mkBurtonGen
+
+       when (not$ NoC `elem` opts) $ do
+	  putStrLn$ "  Comparison to C's rand():"
+	  time_c2 th freq "ptr store in C loop"   store_loop
+	  time_c2 th freq "rand/store in C loop"  blast_rands
+	  time_c2 th freq "rand in Haskell loop" (\n ptr -> forM_ [1..n]$ \_ -> rand )
+	  time_c2 th freq "rand/store in Haskell loop"  (\n ptr -> forM_ [1..n]$ \_ -> do n <- rand; poke ptr n )
+	  return ()
+          -- timeit 1 freq "rand / Haskell loop" mkBurtonGen
+
+--   gamut 1
+
+   when (numCapabilities > 1) $ do 
+--   when (False) $ do 
+       putStrLn$ "\nNow "++ show numCapabilities ++" threads, reporting mean randoms-per-second-per-thread:"
+       gamut numCapabilities
+       return ()
 
    putStrLn$ "Finished."
-
