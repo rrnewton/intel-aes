@@ -1,0 +1,11 @@
+
+Here are the major TODO items:
+
+
+  * In addition to human readable output, write CSV to a log
+  * Do big runs and look at performance variance in a statistically
+    rigorous way.
+
+  * Include the Intel AES sample library!
+
+  
