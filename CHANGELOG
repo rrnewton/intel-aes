@@ -1,0 +1,26 @@
+Note, in addition to nice, tidy CHANGELOG, there's also a verbose DEVLOG below.
+
+
+Version 0.1.1 -- Initial release
+
+
+DEVLOG:
+--------------------------------------------------------------------------------
+
+[2011.01.28] {unexpected performance bump}
+
+Note: when I duplicated part of the Crypto I also saw a little
+performance bump on my 3.33 ghz nehalem desktop IN SPITE of the fact
+that I had tweaked and reinstalled my system's Crypto library, taking
+care to compile it with -O2.  Better inlining?
+
+Old numbers, per second:
+
+         15,753 random ints generated [BurtonGenSlow/reference]   ~ 209,832 cycles/int
+         31,577 random ints generated [BurtonGenSlow]             ~ 104,680 cycles/int
+
+New numbers:
+
+         16,052 random ints generated [BurtonGenSlow/reference]   ~ 205,226 cycles/int
+         32,411 random ints generated [BurtonGenSlow]             ~ 101,641 cycles/int
+
