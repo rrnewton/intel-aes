@@ -12,7 +12,7 @@
 @
  -}
 {-# LANGUAGE FlexibleInstances, EmptyDataDecls, FlexibleContexts, NamedFieldPuns,
-    UndecidableInstances, ScopedTypeVariables #-}
+     ScopedTypeVariables #-}
 
 module Codec.Crypto.IntelAES
     (
@@ -23,21 +23,23 @@ module Codec.Crypto.IntelAES
 where 
 
 import System.Random 
-import System.Exit
 import System.IO.Unsafe (unsafePerformIO)
 import GHC.IO (unsafeDupablePerformIO)
 
+import Data.List
 import Data.Word
 import Data.Tagged
 import Data.Serialize
 
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Internal as BI
 
 import Crypto.Random.DRBG ()
 import Crypto.Modes
-import Crypto.Random (CryptoRandomGen(..), splitGen, genBytes)
-import Crypto.Classes (BlockCipher(..))
+
+import Crypto.Random (CryptoRandomGen(..), GenError(..), splitGen, genBytes)
+import Crypto.Classes (BlockCipher(..), blockSizeBytes)
 import Crypto.Types
 
 import Control.Monad
@@ -61,6 +63,7 @@ import Foreign.Storable
 data LiftCRG1 a = LiftCRG1 a
 instance CryptoRandomGen g => RandomGen (LiftCRG1 g) where 
    next  (LiftCRG1 g) = 
+--       case genBytes (max bytes_in_int (keyLength g `quot` 8)) g of 
        case genBytes bytes_in_int g of 
          Left err -> error$ "CryptoRandomGen genBytes error: " ++ show err
 	 Right (bytes,g') -> 
@@ -86,19 +89,39 @@ bytes_in_int = (round $ 1 + logBase 2 (fromIntegral (maxBound :: Int)))  `quot` 
 -- We would also like every BlockCipher to constitute a valid CryptoRandomGen.
 -- Again there's the tension with UndecidableInstances vs explicit lifting.
 
-instance BlockCipher x => CryptoRandomGen x where 
-  newGen         = undefined
-  genSeedLength = Tagged 0
+-- When lifting we include a counter:
+data BCtoCRG a = BCtoCRG a Word64
 
-  genBytes req g = undefined
-	  -- let reqI = fromIntegral req
-	  --     rnd = L.take reqI bs
-	  --     rest = L.drop reqI bs
-	  -- in if L.length rnd == reqI
-	  -- 	  then Right (B.concat $ L.toChunks rnd, SysRandom rest)
-	  -- 	  else Left $ GenErrorOther "Error obtaining enough bytes from system random for given request"
---  reseed _ _ = Left NeedsInfiniteSeed
-  reseed _ _ = undefined
+instance BlockCipher x => CryptoRandomGen (BCtoCRG x) where 
+  newGen  bytes = case buildKey bytes of Nothing -> Left NotEnoughEntropy 
+					 Just x  -> Right (BCtoCRG x 0)
+  genSeedLength = Tagged 128
+
+  -- If this is called for less than blockSize data 
+  genBytes req (BCtoCRG (bcgen :: k) counter) = 
+      -- What's the most efficient way to do this?
+      unsafePerformIO $ do
+--      unsafeDupablePerformIO $ do
+	-- Number of times to stamp out the counter:
+        let bsize = untag (blockSizeBytes :: Tagged k ByteLength)
+	    numstamps = (req + 7) `quot` 8
+	    numblocks = (req + bsize - 1) `quot` bsize
+	    total     = max (numstamps * 8) (numblocks * bsize)
+
+        -- putStrLn$ "[temp] requested "++show req++" bytes, stamping  "++show (numstamps*8)++
+	-- 	  " into "++show numblocks++" block(s), output buf size "++show total
+
+        buf :: FP.ForeignPtr Word64 <- FP.mallocForeignPtrBytes total
+	FP.withForeignPtr buf $ \ptr -> 
+	  forM_ [0..numstamps-1] $ \i -> 
+	    pokeElemOff ptr i (counter + fromIntegral i)
+        let cipher = encryptBlock bcgen (BI.fromForeignPtr (FP.castForeignPtr buf) 0 total)
+	    newgen = BCtoCRG bcgen (counter + fromIntegral numstamps)
+	-- At the end we may have requested more bytes than needed, so we might crop:
+	if req==total then return$ Right (cipher, newgen)
+	              else return$ Right (B.take req cipher, newgen)
+
+  reseed bs gen = newGen bs
 
 
 
@@ -142,11 +165,6 @@ data N256
 
 data IntelAES n = IntelAES { aesKeyRaw :: B.ByteString }
 
-instance Serialize (IntelAES N128) where
-	get = getGeneral 16
-	put = putByteString . aesKeyRaw
-
-
 {-# INLINE unpackKey #-}
 unpackKey (IntelAES {aesKeyRaw}) = kptr
   -- TODO: ASSERT that key is the right length and offset is zero...
@@ -154,14 +172,16 @@ unpackKey (IntelAES {aesKeyRaw}) = kptr
   (kptr,koff,klen) = BI.toForeignPtr aesKeyRaw
 
 {-# INLINE template #-}
-template core ctx@(IntelAES {aesKeyRaw}) plaintext = 
+template core keysize ctx@(IntelAES {aesKeyRaw}) plaintext = 
 --	 unsafeDupablePerformIO $
 	 unsafePerformIO $
 	 do let kfptr                   = unpackKey ctx 
 		(in_fptr,in_off,in_len) = BI.toForeignPtr plaintext
-		(blocks,r) = quotRem in_len 16
-	    -- The buffer should be a multiple of 128 bits (16 bytes)
-	    when (r > 0)$ error "encryptBlock: for AES implementation block size must be a multiple of 128bits"
+		(blocks,r) = quotRem in_len keysize
+	    -- The buffer should be a multiple of the key size (128/192,256 bits):
+	    when (r > 0)$ 
+	       error$ "encryptBlock: block size "++show in_len++
+		      " bytes , but with AES implementation block size must be a multiple of "++show keysize
 
 	    output <- FP.mallocForeignPtrBytes in_len 
 	    FP.withForeignPtr kfptr $ \ keyptr -> 
@@ -173,15 +193,41 @@ template core ctx@(IntelAES {aesKeyRaw}) plaintext =
 
 instance BlockCipher (IntelAES N128) where
 	blockSize    = Tagged 128
-	encryptBlock = template intel_AES_enc128
-	decryptBlock = template intel_AES_dec128
-	    
+	encryptBlock = template intel_AES_enc128 16
+	decryptBlock = template intel_AES_dec128 16
         -- What's the right behavior here?  Currently this refuses to
         -- generate keys if given an insufficient # of bytes.
-	buildKey bytes = if B.length bytes >= 16
-			 then Just$ newCtx bytes
-			 else Nothing
+	buildKey bytes | B.length bytes >= 16 = Just$ newCtx bytes
+        buildKey _     | otherwise            = Nothing
+	keyLength (IntelAES {aesKeyRaw}) = B.length aesKeyRaw * 8 -- bits
+
+instance Serialize (IntelAES N128) where
+	get = getGeneral 16
+	put = putByteString . aesKeyRaw
+
+-- <boilerplate>
+instance BlockCipher (IntelAES N192) where
+	blockSize    = Tagged 192
+	encryptBlock = template intel_AES_enc192 24
+	decryptBlock = template intel_AES_dec192 24
+	buildKey bytes | B.length bytes >= 24 = Just$ newCtx bytes
+        buildKey _     | otherwise            = Nothing
 	keyLength (IntelAES {aesKeyRaw}) = B.length aesKeyRaw
+instance Serialize (IntelAES N192) where
+	get = getGeneral 24
+	put = putByteString . aesKeyRaw
+instance BlockCipher (IntelAES N256) where
+	blockSize    = Tagged 192
+	encryptBlock = template intel_AES_enc256 32
+	decryptBlock = template intel_AES_dec256 32
+	buildKey bytes | B.length bytes >= 32 = Just$ newCtx bytes
+        buildKey _     | otherwise            = Nothing
+	keyLength (IntelAES {aesKeyRaw}) = B.length aesKeyRaw
+instance Serialize (IntelAES N256) where
+	get = getGeneral 32
+	put = putByteString . aesKeyRaw
+-- </boilerplate>
+
 
 getGeneral :: BlockCipher (IntelAES n) => Int -> Get (IntelAES n)
 getGeneral n = do
@@ -240,9 +286,7 @@ testIntelAES = do
   print ls
 
   putStrLn$ "================================================================================" 
-
-  ------------------------------------------------------------
-  putStrLn$ "\nNow let's try it as a block cypher..."
+  putStrLn$ "\nNow let's try it as a block cypher... encrypt increasing bytes:"
   let inp = B.pack $ take bytes [0..]
       ctxt :: IntelAES N128 = newCtx (B.take 16 inp) 
       cipher = encryptBlock ctxt inp
@@ -252,9 +296,20 @@ testIntelAES = do
   putStrLn$ "\nCiphertext: "++ show (B.unpack cipher)
   putStrLn$ "\nAnd back again: "++ show (B.unpack backagain)
 
+  putStrLn$ "================================================================================" 
+  putStrLn$ "\nFinally lets use it to generate some random numbers:"
+  let Right (gen :: BCtoCRG (IntelAES N128)) = newGen (BC.pack "################")
+      gen2 = LiftCRG1 gen
+      fn (0,_) = Nothing
+      fn (i,g) = let (n,g') = next g in Just (n, (i-1,g'))
+      nums = unfoldr fn (20,gen2)
+  putStrLn$ "Randoms: " ++ show nums
+-- unfoldr :: (b -> Maybe (a, b)) -> b -> [a]
+-- scanl (a -> b -> a) -> a -> [b] -> [a]
+-- scanr (a -> b -> b) -> b -> [a] -> [b]
+
   ------------------------------------------------------------
   putStrLn$ "Done."
-  exitSuccess
   -- putStrLn$ "Next calling test routine in C:"
   -- temp_test128 
   -- putStrLn$ "Done with that test routine"

@@ -260,12 +260,13 @@ replicate_kernel numthreads kern n ptr = do
 ----------------------------------------------------------------------------------------------------
 -- Main Script
 
-data Flag = NoC | Help
+data Flag = NoC | Help | Test
   deriving (Show, Eq)
 
 options = 
    [ Option ['h']  ["help"]  (NoArg Help)  "print program help"
-   , Option []     ["noC"]   (NoArg NoC)   "omit C tests, haskell only"
+   , Option []     ["noC"]   (NoArg NoC)   "omit C benchmarks, haskell only"
+   , Option ['t']  ["test"]  (NoArg Test)  "run some basic tests"
    ]
 
   
@@ -273,7 +274,9 @@ main = do
    argv <- getArgs
    let (opts,_,other) = getOpt Permute options argv
 
-   IA.testIntelAES
+   when (Test `elem` opts)$ do
+       IA.testIntelAES
+       exitSuccess
 
    when (not$ null other) $ do
        putStrLn$ "ERROR: Unrecognized options: " 
