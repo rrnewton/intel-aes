@@ -48,16 +48,31 @@ import qualified Foreign.ForeignPtr as FP
 import Foreign.Storable
 
 ----------------------------------------------------------------------------------------------------
+
+type SimpleAESRNG = LiftCRG1 (BCtoCRG (IntelAES N128))
+
+-- Expose a simple System.Random.RandomGen
+mkAESGen :: Int -> SimpleAESRNG
+mkAESGen int = LiftCRG1 gen
+ where
+  Right (gen :: BCtoCRG (IntelAES N128)) = newGen (B.append halfseed halfseed )
+  halfseed = encode word64
+  word64 = fromIntegral int :: Word64
+
+
+----------------------------------------------------------------------------------------------------
+-- Lifting CryptoRandomGen into 
 -- This should go somewhere else...
 
--- Also, there's an overlapping instances problem here.  Someone may
--- want to do their own RandomGen instance... 
--- instance CryptoRandomGen g => RandomGen g where 
---   next = undefined
---   split = undefined
-
+-- There's a potential overlapping instances problem here.  Someone
+-- may want to do their own RandomGen instance, creating a problem
+-- with this:
+--
+--   instance CryptoRandomGen g => RandomGen g where 
+--
 -- NOTE: The above would also be an undecidable instance.  Another
--- option is to have a type used just for lifting:
+-- option is to have a type used just for lifting.  See below.
+
 
 -- This naive version is probably pretty inefficent:
 data LiftCRG1 a = LiftCRG1 a
@@ -298,8 +313,10 @@ testIntelAES = do
 
   putStrLn$ "================================================================================" 
   putStrLn$ "\nFinally lets use it to generate some random numbers:"
-  let Right (gen :: BCtoCRG (IntelAES N128)) = newGen (BC.pack "################")
-      gen2 = LiftCRG1 gen
+  let 
+      gen2 = mkAESGen 92438653296
+--      Right (gen :: BCtoCRG (IntelAES N128)) = newGen (BC.pack "################")
+--      gen2 = LiftCRG1 gen
       fn (0,_) = Nothing
       fn (i,g) = let (n,g') = next g in Just (n, (i-1,g'))
       nums = unfoldr fn (20,gen2)
