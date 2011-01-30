@@ -17,7 +17,12 @@
 module Codec.Crypto.IntelAES
     (
       testIntelAES
-    , LiftCRG1(..)
+    , mkAESGen, SimpleAESRNG, LiftCRG0(..)
+
+    -- Inefficient version for testing:
+    , mkAESGen0, SimpleAESRNG0, LiftCRG0(..)
+
+    , BCtoCRG(..)
      -- Plus, instances exported of course.
     )
 where 
@@ -49,20 +54,32 @@ import Foreign.Storable
 
 ----------------------------------------------------------------------------------------------------
 
-type SimpleAESRNG = LiftCRG1 (BCtoCRG (IntelAES N128))
+type SimpleAESRNG = LiftCRG (BCtoCRG (IntelAES N128))
 
--- Expose a simple System.Random.RandomGen
+-- Expose a simple System.Random.RandomGen interface:
 mkAESGen :: Int -> SimpleAESRNG
-mkAESGen int = LiftCRG1 gen
+mkAESGen int = convertCRG gen
  where
   Right (gen :: BCtoCRG (IntelAES N128)) = newGen (B.append halfseed halfseed )
   halfseed = encode word64
   word64 = fromIntegral int :: Word64
 
 
+-- TEMP: Inefficient version for testing:
+type SimpleAESRNG0 = LiftCRG0 (BCtoCRG (IntelAES N128))
+mkAESGen0 :: Int -> SimpleAESRNG0
+mkAESGen0 int = LiftCRG0 gen
+ where
+  Right (gen :: BCtoCRG (IntelAES N128)) = newGen (B.append halfseed halfseed )
+  halfseed = encode word64
+  word64 = fromIntegral int :: Word64
+
+
+
 ----------------------------------------------------------------------------------------------------
--- Lifting CryptoRandomGen into 
+-- Converting CryptoRandomGen to RandomGen
 -- This should go somewhere else...
+----------------------------------------
 
 -- There's a potential overlapping instances problem here.  Someone
 -- may want to do their own RandomGen instance, creating a problem
@@ -74,22 +91,23 @@ mkAESGen int = LiftCRG1 gen
 -- option is to have a type used just for lifting.  See below.
 
 
--- This naive version is probably pretty inefficent:
-data LiftCRG1 a = LiftCRG1 a
-instance CryptoRandomGen g => RandomGen (LiftCRG1 g) where 
-   next  (LiftCRG1 g) = 
+-- | Converting CryptoRandomGen to RandomGen.
+-- | This naive version is probably pretty inefficent:
+data LiftCRG0 a = LiftCRG0 a
+instance CryptoRandomGen g => RandomGen (LiftCRG0 g) where 
+   next  (LiftCRG0 g) = 
 --       case genBytes (max bytes_in_int (keyLength g `quot` 8)) g of 
        case genBytes bytes_in_int g of 
          Left err -> error$ "CryptoRandomGen genBytes error: " ++ show err
 	 Right (bytes,g') -> 
            case decode bytes of 
 	      Left err -> error$ "Deserialization error:"++ show err
-	      Right n -> (n, LiftCRG1 g')
+	      Right n -> (n, LiftCRG0 g')
 	     
-   split (LiftCRG1 g) = 
+   split (LiftCRG0 g) = 
        case splitGen g of 
          Left err      -> error$ "CryptoRandomGen splitGen error:"++ show err
-	 Right (g1,g2) -> (LiftCRG1 g1, LiftCRG1 g2)
+	 Right (g1,g2) -> (LiftCRG0 g1, LiftCRG0 g2)
 
 -- Another option would be to amortize overhead by generating a large
 -- buffer of random bits at once.
@@ -99,8 +117,41 @@ instance CryptoRandomGen g => RandomGen (LiftCRG1 g) where
 bytes_in_int = (round $ 1 + logBase 2 (fromIntegral (maxBound :: Int)))  `quot` 8
 -- steps = 128 `quot` bits_in_int
 
-
 ------------------------------------------------------------
+-- | Now let's try to make that a bit more efficient.
+-- | Keep a buffer of random bits and an index into that buffer.
+data LiftCRG a = LiftCRG a 
+    {-#UNPACK#-}!         (FP.ForeignPtr Int)
+    {-#UNPACK#-}!         Int
+
+instance CryptoRandomGen g => RandomGen (LiftCRG g) where 
+   next (LiftCRG g _ ind) | ind == bufsize = next (convertCRG g) -- Refill the buffer
+   next (LiftCRG g buf ind) = 
+       unsafeDupablePerformIO $ 
+         FP.withForeignPtr buf $ \ ptr -> 
+           do x <- peekElemOff ptr ind 
+	      return (x, LiftCRG g buf (ind+1))
+	     
+   split (LiftCRG g buf ind) = 
+       case splitGen g of 
+         Left err      -> error$ "CryptoRandomGen splitGen error:"++ show err
+	 Right (g1,g2) -> (LiftCRG g1 buf ind, convertCRG g2)
+
+
+convertCRG :: CryptoRandomGen g => g -> LiftCRG g
+convertCRG crg = LiftCRG g' (FP.castForeignPtr ptr) 0
+ where 
+  (ptr,_,_)     = BI.toForeignPtr bs
+  Right (bs,g') = genBytes (bufsize * bytes_in_int) crg
+
+
+-- How many 8 byte chunks should we buffer each time?
+-- TODO: Autotune this...
+bufsize = 256
+
+
+
+----------------------------------------------------------------------------------------------------
 -- We would also like every BlockCipher to constitute a valid CryptoRandomGen.
 -- Again there's the tension with UndecidableInstances vs explicit lifting.
 
@@ -315,15 +366,10 @@ testIntelAES = do
   putStrLn$ "\nFinally lets use it to generate some random numbers:"
   let 
       gen2 = mkAESGen 92438653296
---      Right (gen :: BCtoCRG (IntelAES N128)) = newGen (BC.pack "################")
---      gen2 = LiftCRG1 gen
       fn (0,_) = Nothing
       fn (i,g) = let (n,g') = next g in Just (n, (i-1,g'))
       nums = unfoldr fn (20,gen2)
   putStrLn$ "Randoms: " ++ show nums
--- unfoldr :: (b -> Maybe (a, b)) -> b -> [a]
--- scanl (a -> b -> a) -> a -> [b] -> [a]
--- scanr (a -> b -> b) -> b -> [a] -> [b]
 
   ------------------------------------------------------------
   putStrLn$ "Done."

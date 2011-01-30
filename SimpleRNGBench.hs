@@ -302,6 +302,8 @@ main = do
        timeit th freq "System.Random stdGen" mkStdGen
        timeit th freq "BurtonGenSlow/reference" BS.mkBurtonGen_reference
        timeit th freq "BurtonGenSlow"           BS.mkBurtonGen
+       timeit th freq "IntelAES inefficient"    IA.mkAESGen0
+       timeit th freq "IntelAES"                IA.mkAESGen
 
        when (not$ NoC `elem` opts) $ do
 	  putStrLn$ "  Comparison to C's rand():"
