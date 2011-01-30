@@ -7,7 +7,10 @@
 
 module Main where
 
-import Codec.Encryption.BurtonRNGSlow as BS
+import qualified Codec.Encryption.BurtonRNGSlow as BS
+import qualified Codec.Encryption.BurtonRNG     as B
+
+import qualified Codec.Crypto.IntelAES          as IA
 
 import System.Exit (exitSuccess, exitFailure)
 import System.Environment
@@ -270,6 +273,8 @@ main = do
    argv <- getArgs
    let (opts,_,other) = getOpt Permute options argv
 
+   IA.testIntelAES
+
    when (not$ null other) $ do
        putStrLn$ "ERROR: Unrecognized options: " 
        mapM_ putStr other
@@ -292,8 +297,8 @@ main = do
        putStrLn$ "  First, timing with System.Random interface:"
        timeit th freq "constant zero gen" (const NoopRNG)
        timeit th freq "System.Random stdGen" mkStdGen
-       timeit th freq "BurtonGenSlow/reference" mkBurtonGen_reference
-       timeit th freq "BurtonGenSlow" mkBurtonGen
+       timeit th freq "BurtonGenSlow/reference" BS.mkBurtonGen_reference
+       timeit th freq "BurtonGenSlow"           BS.mkBurtonGen
 
        when (not$ NoC `elem` opts) $ do
 	  putStrLn$ "  Comparison to C's rand():"
@@ -304,7 +309,7 @@ main = do
 	  return ()
           -- timeit 1 freq "rand / Haskell loop" mkBurtonGen
 
---   gamut 1
+   gamut 1
 
    when (numCapabilities > 1) $ do 
 --   when (False) $ do 

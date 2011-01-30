@@ -183,3 +183,16 @@ benchmarks.
       Task  5 (worker) :   16.05s    (  4.46s)       0.78s    (  0.23s)
 
 
+
+
+[2011.01.29] {Wrapping the Intel AES Sample Library}
+
+The big question is whether to drop in their whole distribution and
+call their build script, or try to rip out just the bits I need.
+
+Here's the GCC call they use to build the intel_aes64.a library:
+
+    for i in $asm; do echo do $i.s; $yasm -D__linux__ -g dwarf2 -f elf${sz} asm/x${arch}/$i.s -o obj/x${arch}/$i.o; done
+    gcc -O3 -g -m${sz} -Iinclude/ -c src/intel_aes.c -o obj/x${arch}/intel_aes.o
+    ar -r lib/x${arch}/intel_aes${arch}.a obj/x${arch}/*.o
+

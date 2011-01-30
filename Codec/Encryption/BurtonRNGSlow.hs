@@ -9,7 +9,7 @@
    
  -}
 
-module Codec.Encryption.BurtonRNGSlow 
+module Codec.Encryption.BurtonRNGSlow
     (
      mkBurtonGen_reference,
      mkBurtonGen

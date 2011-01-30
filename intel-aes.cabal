@@ -23,27 +23,50 @@ source-repository head
   location: git://github.com/rrnewton/intel-aes.git
 
 
-
-
+----------------------------------------------------------------------------------------------------
 library
   build-depends:  base, random, DRBG, split
 --  Crypto, -- Cloning this dependency for now.
 
   exposed-modules:  Codec.Encryption.BurtonRNGSlow
+                 ,  Codec.Encryption.BurtonRNG
   extensions: 
-  GHC-Options: -O2 
 
-Executable benchmark-intel-aes-rng
-  Main-is:        SimpleRNGBench.hs
-  Build-Depends:  base, split, rdtsc, unix, 
-                  -- For binsearch:
-                  process, haskell98, time
---  GHC-Options:    -O2 
-  GHC-Options:    -O2 -threaded -rtsopts 
-  C-sources:	   cbits/c_test.c
-  Include-dirs:    cbits
+  GHC-Options: -O2 cbits/intel_aes64.a
+----------------------------------------
+--  GHC-Options: -O2 cbits/intel_aes64.a
+  -- extra-libraries: intel_aes64.a
+  -- extra-lib-dirs: ~/intel-aes/cbits/
+--  ld-options: -L/home/newton/intel-aes/cbits  intel_aes64.a
+  ld-options: cbits/intel_aes64.a
+  C-sources: 
+              cbits/intel_aes.c
+           --   cbits/intel_aes.c
+           -- , cbits/do_rdtsc.s
+           -- , cbits/iaesx64.s
+
+--           , cbits/iaesni.h
+--           , cbits/iaes_asm_interface.h
+           -- , cbits/include/iaesni.h
+           -- , cbits/include/iaes_asm_interface.h
 
 
-{- 
-  cabal haddock --hoogle --executables --hyperlink-source --haddock-options="--html"
- -}
+
+-- ----------------------------------------------------------------------------------------------------
+-- Executable benchmark-intel-aes-rng
+--   Main-is:        SimpleRNGBench.hs
+--   Build-Depends:  base, split, rdtsc, unix, 
+--                   -- For binsearch:
+--                   process, haskell98, time
+-- --  GHC-Options:    -O2 
+--   GHC-Options:    -O2 -threaded -rtsopts 
+-- --cbits/intel_aes64.a
+--   C-sources:	   cbits/c_test.c
+--   Include-dirs:    cbits
+-- ----------------------------------------
+-- --  ld-options: -L/home/newton/intel-aes/cbits  intel_aes64.a
+-- --  ld-options: cbits/intel_aes64.a
+
+-- {- 
+--   cabal haddock --hoogle --executables --hyperlink-source --haddock-options="--html"
+--  -}

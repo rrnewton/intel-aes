@@ -40,3 +40,16 @@ int main() {
   return 0;
 }
 #endif
+
+
+
+// [2011.01.30] TEMP, testing AES bindings
+#if 0
+#include "iaesni.h"
+
+void temp_test128()
+{
+   printf("  Inside C test...\n");
+   
+}
+#endif
