@@ -8,7 +8,6 @@
 module Main where
 
 import qualified Codec.Encryption.BurtonRNGSlow as BS
-import qualified Codec.Encryption.BurtonRNG     as B
 
 import qualified Codec.Crypto.IntelAES          as IA
 

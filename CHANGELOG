@@ -196,3 +196,9 @@ Here's the GCC call they use to build the intel_aes64.a library:
     gcc -O3 -g -m${sz} -Iinclude/ -c src/intel_aes.c -o obj/x${arch}/intel_aes.o
     ar -r lib/x${arch}/intel_aes${arch}.a obj/x${arch}/*.o
 
+Ok... I tried rebuilding the library by hand to get a .so
+
+    gcc -fPIC -O3 -g -Iinclude/ -c src/intel_aes.c -o obj/x64/intel_aes.o
+    gcc -shared -dynamic  -o lib/x64/libintel_aes64.so obj/x64/*.o
+
+

@@ -13,7 +13,7 @@ Description:
              statistically sound, splittable random number generation based on AES.
 
 Category: Cryptography
-Cabal-Version: >=1.6
+Cabal-Version: >=1.8
 
 build-type: Simple
 -- build-type: Distribution.Simple.Haddock
@@ -25,25 +25,28 @@ source-repository head
 
 ----------------------------------------------------------------------------------------------------
 library
-  build-depends:  base, random, DRBG, split
+  build-depends:  base, random, DRBG, split, 
+                  DRBG, crypto-api, bytestring, cereal, tagged
 --  Crypto, -- Cloning this dependency for now.
 
   exposed-modules:  Codec.Encryption.BurtonRNGSlow
-                 ,  Codec.Encryption.BurtonRNG
+                 ,  Codec.Crypto.IntelAES
   extensions: 
 
   GHC-Options: -O2 cbits/intel_aes64.a
 ----------------------------------------
 --  GHC-Options: -O2 cbits/intel_aes64.a
-  -- extra-libraries: intel_aes64.a
-  -- extra-lib-dirs: ~/intel-aes/cbits/
+  extra-libraries: intel_aes64
+  extra-lib-dirs: /home/newton/intel-aes/cbits/
 --  ld-options: -L/home/newton/intel-aes/cbits  intel_aes64.a
-  ld-options: cbits/intel_aes64.a
+--  ld-options: cbits/intel_aes64.a
+--  install-includes: cbits/intel_aes64.a
   C-sources: 
-              cbits/intel_aes.c
+--             cbits/intel_aes.c
+-- It does seem to call the assembler... but not correctly... probably doesn't handle intel syntax:
+--            , cbits/iaesx64.s 
            --   cbits/intel_aes.c
            -- , cbits/do_rdtsc.s
-           -- , cbits/iaesx64.s
 
 --           , cbits/iaesni.h
 --           , cbits/iaes_asm_interface.h
@@ -51,22 +54,22 @@ library
            -- , cbits/include/iaes_asm_interface.h
 
 
-
 -- ----------------------------------------------------------------------------------------------------
--- Executable benchmark-intel-aes-rng
---   Main-is:        SimpleRNGBench.hs
---   Build-Depends:  base, split, rdtsc, unix, 
---                   -- For binsearch:
---                   process, haskell98, time
--- --  GHC-Options:    -O2 
---   GHC-Options:    -O2 -threaded -rtsopts 
--- --cbits/intel_aes64.a
---   C-sources:	   cbits/c_test.c
---   Include-dirs:    cbits
--- ----------------------------------------
--- --  ld-options: -L/home/newton/intel-aes/cbits  intel_aes64.a
--- --  ld-options: cbits/intel_aes64.a
+Executable benchmark-intel-aes-rng
+  Main-is:        SimpleRNGBench.hs
+  Build-Depends:  base, split, rdtsc, unix, random, crypto-api, DRBG,
+                  tagged, cereal, bytestring, process, haskell98, time, intel-aes
+  GHC-Options:    -O2 -threaded -rtsopts 
+  C-sources:	   cbits/c_test.c
+  Include-dirs:    cbits
+  extra-libraries: intel_aes64
+  extra-lib-dirs: /home/newton/intel-aes/cbits/
+--  ld-options: cbits/intel_aes64.a
 
--- {- 
---   cabal haddock --hoogle --executables --hyperlink-source --haddock-options="--html"
---  -}
+----------------------------------------
+--  ld-options: -L/home/newton/intel-aes/cbits  intel_aes64.a
+--  ld-options: cbits/intel_aes64.a
+
+{- 
+  cabal haddock --hoogle --executables --hyperlink-source --haddock-options="--html"
+ -}

@@ -18,13 +18,26 @@ fi
 
 mkdir -p obj/x${arch}
 
-yasm="../yasm/yasm"
+#yasm="../yasm/yasm"
+yasm=yasm
 
 pushd .
 asm="iaesx${arch} do_rdtsc"
-for i in $asm; do echo do $i.s; $yasm -D__linux__ -g dwarf2 -f elf${sz} asm/x${arch}/$i.s -o obj/x${arch}/$i.o; done
-gcc -O3 -g -m${sz} -Iinclude/ -c src/intel_aes.c -o obj/x${arch}/intel_aes.o
-ar -r lib/x${arch}/intel_aes${arch}.a obj/x${arch}/*.o
+for i in $asm; do 
+   # echo do $i.s
+   echo "$yasm -D__linux__ -g dwarf2 -f elf${sz} asm/x${arch}/$i.s -o obj/x${arch}/$i.o"
+   $yasm -D__linux__ -g dwarf2 -f elf${sz} asm/x${arch}/$i.s -o obj/x${arch}/$i.o
+done
+# gcc -O3 -g -m${sz} -Iinclude/ -c src/intel_aes.c -o obj/x${arch}/intel_aes.o
+# RRN: Building a shared library too:
+ echo "Compiling C source"
+ gcc -fPIC -O3 -g -Iinclude/ -c src/intel_aes.c -o obj/x64/intel_aes.o
+
+ echo "Linking static and dynamic libraries"
+ ar -r lib/x${arch}/libintel_aes${arch}.a obj/x${arch}/*.o
+ gcc -shared -dynamic  -o lib/x${arch}/libintel_aes${arch}.so obj/x64/*.o
 popd
 
-
+echo "Copying to cbits parent directory"
+cp lib/x${arch}/*.so ../../
+cp lib/x${arch}/*.a  ../../
