@@ -22,6 +22,7 @@ YASM=yasm
 YASMFLAGS= -D__linux__ -g dwarf2 -f elf$(SZ) 
 
 all: $(STATIC) $(DYNAMIC)
+	cp lib/x$(ARCH)/* ../../
 
 $(STATIC): $(OBJ)
 	@mkdir -p lib/x$(ARCH)

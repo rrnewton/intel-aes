@@ -18,6 +18,23 @@ Cabal-Version: >=1.8
 build-type: Simple
 -- build-type: Distribution.Simple.Haddock
 
+extra-source-files:
+      cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/Makefile
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/asm/x64/do_rdtsc.s
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/asm/x64/iaesx64.s
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/asm/x86/do_rdtsc.s
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/asm/x86/iaesx86.s
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/include/iaes_asm_interface.h
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/include/iaesni.h
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/mk_lnx_lib.sh
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/mk_win_lib.bat
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/src/aessample.c
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/src/aessampletiming.cpp
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/src/intel_aes.c
+    , cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/where_files_come_from_and_license.txt
+    , cbits/Makefile
+    , cbits/c_test.c
+
 source-repository head
   type:     git
   location: git://github.com/rrnewton/intel-aes.git
@@ -38,15 +55,16 @@ library
                  ,  Codec.Utils
   extensions: 
 
-  GHC-Options: -O2 cbits/intel_aes64.a
+  GHC-Options: -O2 
 ----------------------------------------
 --  GHC-Options: -O2 cbits/intel_aes64.a
-  extra-libraries: intel_aes64
+  extra-libraries: intel_aes
   extra-lib-dirs: /home/newton/intel-aes/cbits/
+
 --  ld-options: -L/home/newton/intel-aes/cbits  intel_aes64.a
 --  ld-options: cbits/intel_aes64.a
 --  install-includes: cbits/intel_aes64.a
-  C-sources: 
+--  C-sources: 
 --             cbits/intel_aes.c
 -- It does seem to call the assembler... but not correctly... probably doesn't handle intel syntax:
 --            , cbits/iaesx64.s 
@@ -59,6 +77,7 @@ library
            -- , cbits/include/iaes_asm_interface.h
 
 
+
 -- ----------------------------------------------------------------------------------------------------
 Executable benchmark-intel-aes-rng
   Main-is:        SimpleRNGBench.hs
@@ -67,7 +86,7 @@ Executable benchmark-intel-aes-rng
   GHC-Options:    -O2 -threaded -rtsopts 
   C-sources:	   cbits/c_test.c
   Include-dirs:    cbits
-  extra-libraries: intel_aes64
+  extra-libraries: intel_aes
   extra-lib-dirs: /home/newton/intel-aes/cbits/
 --  ld-options: cbits/intel_aes64.a
 
