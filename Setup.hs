@@ -3,5 +3,5 @@ import Distribution.Simple
 
 
 main = do
-  putStrLn$ "Running Setup.hs..."
+  putStrLn$ "*** Running Setup.hs..."
   defaultMainWithHooks simpleUserHooks
