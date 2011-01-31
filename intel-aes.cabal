@@ -63,27 +63,16 @@ library
   GHC-Options: -O2 
   -- I can't get it to link this with an absolute path:
   extra-libraries: intel_aes
-  extra-lib-dirs: /opt/intel-aes/cbits/
-  ld-options: -Wl,-rpath=/opt/intel-aes/cbits/
 
+  -- HACK: These lines will get automatically REPLACED at configure time:
+  extra-lib-dirs: ./cbits/
+--  ld-options: HACKME
+  -- END_HACK
+
+  -- The gladman sources are straightforward and can be built by Cabal:
   C-sources: cbits/gladman/aescrypt.c, cbits/gladman/aeskey.c, cbits/gladman/aestab.c,
              cbits/gladman/aes_modes.c, cbits/gladman/ctr_inc.c
   Include-Dirs: cbits
-
-
---  ld-options: cbits/intel_aes64.a
---  install-includes: cbits/intel_aes64.a
---  C-sources: 
---             cbits/intel_aes.c
--- It does seem to call the assembler... but not correctly... probably doesn't handle intel syntax:
---            , cbits/iaesx64.s 
-           --   cbits/intel_aes.c
-           -- , cbits/do_rdtsc.s
-
---           , cbits/iaesni.h
---           , cbits/iaes_asm_interface.h
-           -- , cbits/include/iaesni.h
-           -- , cbits/include/iaes_asm_interface.h
 
 
 
@@ -94,15 +83,9 @@ Executable benchmark-intel-aes-rng
                   tagged, cereal, bytestring, process, haskell98, time, intel-aes
   GHC-Options:    -O2 -threaded -rtsopts 
   C-sources:	   cbits/c_test.c
---                 , cbits/libintel_aes.a
   Include-dirs:    cbits
---  extra-libraries: intel_aes
---  extra-lib-dirs: /home/newton/intel-aes/cbits/
---  ld-options: cbits/libintel_aes.a
---  ld-options: -L/home/newton/intel-aes/cbits/
 
-----------------------------------------
---  ld-options: -L/home/newton/intel-aes/cbits  intel_aes64.a
---  ld-options: cbits/intel_aes64.a
+
+
 
 --  cabal haddock --hoogle --executables --hyperlink-source --haddock-options="--html"
