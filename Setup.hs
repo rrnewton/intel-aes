@@ -69,8 +69,6 @@ my_preBuild args flags = do
 			  ("ld",["-rpath="++ rootdir ++"/cbits/"]) : (buildProgramArgs flags)
 		       }
 
--- BUILD FLAGS: BuildFlags {buildProgramPaths = [], buildProgramArgs = [], buildDistPref = Flag "dist", buildVerbosity = Flag Normal}
--- BUILD FLAGS: BuildFlags {buildProgramPaths = [], buildProgramArgs = [("ld",["/home/newton/intel-aes/cbits/libintel_aes.a"])], buildDistPref = Flag "dist", buildVerbosity = Flag Deafening}
   (preBuild simpleUserHooks) args flags
 
 

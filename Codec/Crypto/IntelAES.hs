@@ -17,12 +17,12 @@
 module Codec.Crypto.IntelAES
     (
       testIntelAES
-    , mkAESGen, SimpleAESRNG, LiftCRG0(..)
+    , mkAESGen, SimpleAESRNG, LiftCRG(..)
 
     -- Inefficient version for testing:
     , mkAESGen0, SimpleAESRNG0, LiftCRG0(..)
 
-    , BCtoCRG(..)
+    , BCtoCRG(..), convertCRG
      -- Plus, instances exported of course.
     )
 where 

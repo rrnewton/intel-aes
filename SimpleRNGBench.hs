@@ -9,6 +9,7 @@ module Main where
 
 import qualified Codec.Encryption.BurtonRNGSlow as BS
 
+import qualified Codec.Crypto.GladmanAES        as GA
 import qualified Codec.Crypto.IntelAES          as IA
 
 import System.Exit (exitSuccess, exitFailure)
@@ -26,10 +27,15 @@ import Control.Monad
 import Control.Concurrent.Chan
 import Control.Exception
 
+import Crypto.Random (CryptoRandomGen(..))
+
 import Data.IORef
 import Data.List
 import Data.Int
+import Data.Word
 import Data.List.Split
+import Data.Serialize
+import qualified Data.ByteString as B
 import Text.Printf
 
 import Foreign.Ptr
@@ -37,6 +43,25 @@ import Foreign.ForeignPtr
 import Foreign.Storable (peek,poke)
 
 import Benchmark.BinSearch
+
+----------------------------------------------------------------------------------------------------
+-- TEMP: MOVE ME ELSEWHERE:
+
+mkAESGen_gladman :: Int -> IA.LiftCRG (IA.BCtoCRG (GA.AES GA.N128))
+mkAESGen_gladman int = IA.convertCRG gen
+ where
+  Right (gen :: IA.BCtoCRG (GA.AES GA.N128)) = newGen (B.append halfseed halfseed )
+  halfseed = encode word64
+  word64 = fromIntegral int :: Word64
+
+
+mkAESGen_gladman0 :: Int -> IA.LiftCRG0 (IA.BCtoCRG (GA.AES GA.N128))
+mkAESGen_gladman0 int = IA.LiftCRG0 gen
+ where
+  Right (gen :: IA.BCtoCRG (GA.AES GA.N128)) = newGen (B.append halfseed halfseed )
+  halfseed = encode word64
+  word64 = fromIntegral int :: Word64
+
 
 ----------------------------------------------------------------------------------------------------
 -- Miscellaneous helpers:
@@ -299,8 +324,10 @@ main = do
        putStrLn$ "  First, timing with System.Random interface:"
        timeit th freq "constant zero gen" (const NoopRNG)
        timeit th freq "System.Random stdGen" mkStdGen
-       timeit th freq "BurtonGenSlow/reference" BS.mkBurtonGen_reference
-       timeit th freq "BurtonGenSlow"           BS.mkBurtonGen
+       timeit th freq "PureHaskell/reference" BS.mkBurtonGen_reference
+       timeit th freq "PureHaskell"           BS.mkBurtonGen
+       timeit th freq "Gladman inefficient"     mkAESGen_gladman0
+       timeit th freq "Gladman"                 mkAESGen_gladman
        timeit th freq "IntelAES inefficient"    IA.mkAESGen0
        timeit th freq "IntelAES"                IA.mkAESGen
 
