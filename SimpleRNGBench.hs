@@ -1,5 +1,5 @@
 #!/usr/bin/env runhaskell
-{-# LANGUAGE BangPatterns, ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns, ScopedTypeVariables, ForeignFunctionInterface #-}
 -- | A simple script to do some very basic timing of the RNGs.
 
 --   It is important that we also run established stastical tests on

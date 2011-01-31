@@ -14,9 +14,9 @@ Description:
 
 Category: Cryptography
 Cabal-Version: >=1.8
+-- Portability:            Untested on Windows.
 
-build-type: Simple
--- build-type: Distribution.Simple.Haddock
+build-type: Custom
 
 extra-source-files:
       cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/Makefile
@@ -44,7 +44,6 @@ source-repository head
 library
   build-depends:  base, random, DRBG, split, process, haskell98, time,
                   DRBG, crypto-api, bytestring, cereal, tagged
---  Crypto, -- Cloning this dependency for now.
 
   exposed-modules:  Codec.Encryption.BurtonRNGSlow
                  ,  Codec.Crypto.IntelAES
@@ -53,15 +52,12 @@ library
                  ,  Codec.Encryption.AES
                  ,  Codec.Encryption.AESAux
                  ,  Codec.Utils
-  extensions: 
-
   GHC-Options: -O2 
-----------------------------------------
---  GHC-Options: -O2 cbits/intel_aes64.a
+  -- I can't get it to link this with an absolute path:
   extra-libraries: intel_aes
-  extra-lib-dirs: /home/newton/intel-aes/cbits/
+  extra-lib-dirs: /opt/intel-aes/cbits/
+  ld-options: -Wl,-rpath=/opt/intel-aes/cbits/
 
---  ld-options: -L/home/newton/intel-aes/cbits  intel_aes64.a
 --  ld-options: cbits/intel_aes64.a
 --  install-includes: cbits/intel_aes64.a
 --  C-sources: 
@@ -85,10 +81,12 @@ Executable benchmark-intel-aes-rng
                   tagged, cereal, bytestring, process, haskell98, time, intel-aes
   GHC-Options:    -O2 -threaded -rtsopts 
   C-sources:	   cbits/c_test.c
+--                 , cbits/libintel_aes.a
   Include-dirs:    cbits
-  extra-libraries: intel_aes
-  extra-lib-dirs: /home/newton/intel-aes/cbits/
---  ld-options: cbits/intel_aes64.a
+--  extra-libraries: intel_aes
+--  extra-lib-dirs: /home/newton/intel-aes/cbits/
+--  ld-options: cbits/libintel_aes.a
+--  ld-options: -L/home/newton/intel-aes/cbits/
 
 ----------------------------------------
 --  ld-options: -L/home/newton/intel-aes/cbits  intel_aes64.a

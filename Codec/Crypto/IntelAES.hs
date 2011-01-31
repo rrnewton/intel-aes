@@ -12,7 +12,7 @@
 @
  -}
 {-# LANGUAGE FlexibleInstances, EmptyDataDecls, FlexibleContexts, NamedFieldPuns,
-     ScopedTypeVariables #-}
+     ScopedTypeVariables, ForeignFunctionInterface #-}
 
 module Codec.Crypto.IntelAES
     (
@@ -362,6 +362,9 @@ testIntelAES = do
   putStrLn$ "\nCiphertext: "++ show (B.unpack cipher)
   putStrLn$ "\nAnd back again: "++ show (B.unpack backagain)
 
+  when (not$ backagain == inp) $
+    error "Test failed! Round-trip did not get us back to the plaintext!"
+
   putStrLn$ "================================================================================" 
   putStrLn$ "\nFinally lets use it to generate some random numbers:"
   let 
@@ -377,4 +380,3 @@ testIntelAES = do
   -- temp_test128 
   -- putStrLn$ "Done with that test routine"
   
-
