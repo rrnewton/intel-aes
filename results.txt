@@ -1,0 +1,139 @@
+
+A log of informal measurements.
+
+
+[2011.01.31] {First results from a Westmere machine}
+
+     How many random numbers can we generate in a second on one thread?
+      Cost of rdtsc (ffi call):    84
+      Approx getCPUTime calls per second: 209,798
+      Approx clock frequency:  3,331,093,772
+      First, timing with System.Random interface:
+	 76,811,104 random ints generated [constant zero gen]          ~ 43.37 cycles/int
+	 14,482,725 random ints generated [System.Random stdGen]       ~ 230 cycles/int
+	     16,061 random ints generated [PureHaskell/reference]      ~ 207,403 cycles/int
+	     32,309 random ints generated [PureHaskell]                ~ 103,101 cycles/int
+	  2,401,893 random ints generated [Gladman inefficient]        ~ 1,387 cycles/int
+	 15,980,625 random ints generated [Gladman]                    ~ 208 cycles/int
+	  2,329,500 random ints generated [IntelAES inefficient]       ~ 1,430 cycles/int
+	 32,383,799 random ints generated [IntelAES]                   ~ 103 cycles/int
+      Comparison to C's rand():
+	595,263,182 random ints generated [ptr store in C loop]        ~ 5.60 cycles/int
+	 71,392,408 random ints generated [rand/store in C loop]       ~ 46.66 cycles/int
+	 71,347,778 random ints generated [rand in Haskell loop]       ~ 46.69 cycles/int
+	 71,324,158 random ints generated [rand/store in Haskell loop] ~ 46.70 cycles/int
+     Finished.
+
+     ---------------------------------------------------------
+     processor       : 21
+     vendor_id       : GenuineIntel
+     cpu family      : 6
+     model           : 44
+     model name      : Intel(R) Xeon(R) CPU           X5680  @ 3.33GHz
+     stepping        : 2
+     cpu MHz         : 1600.000
+     cache size      : 12288 KB
+     physical id     : 1
+     siblings        : 12
+     core id         : 8
+     cpu cores       : 6
+     apicid          : 49
+     initial apicid  : 49
+     fpu             : yes
+     fpu_exception   : yes
+     cpuid level     : 11
+     wp              : yes
+     flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
+     pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx
+     pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good xtopology
+     nonstop_tsc aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est
+     tm2 ssse3 cx16 xtpr pdcm dca sse4_1 sse4_2 popcnt aes lahf_lm ida arat
+     tpr_shadow vnmi flexpriority ept vpid
+     bogomips        : 6648.89
+     clflush size    : 64
+     cache_alignment : 64
+     address sizes   : 40 bits physical, 48 bits virtual
+     power management:
+
+[2011.02.01] {Results from another westmere with multithreading}
+
+Here's degradation under 4 threads:
+
+     How many random numbers can we generate in a second on one thread?
+       Cost of rdtsc (ffi call):    83
+     COUNTERS WRAPPED (4294963592,11072)
+       Approx getCPUTime calls per second: 165,900
+     WARNING: rdtsc not monotonically increasing, first 2292070581 then 717441175 on the same OS thread
+       Approx clock frequency:  -1,574,629,406
+       First, timing with System.Random interface:
+	  65,858,418 random ints generated [constant zero gen]         ~ -23.91 cycles/int
+	  12,488,802 random ints generated [System.Random stdGen]      ~ -126.08 cycles/int
+	      14,301 random ints generated [PureHaskell/reference]     ~ -110106.24 cycles/int
+	      29,499 random ints generated [PureHaskell]               ~ -53379.08 cycles/int
+	   2,040,034 random ints generated [Gladman inefficient]       ~ -771.86 cycles/int
+	  14,325,249 random ints generated [Gladman]                   ~ -109.92 cycles/int
+	   2,096,602 random ints generated [IntelAES inefficient]      ~ -751.04 cycles/int
+	  26,548,561 random ints generated [IntelAES]                  ~ -59.31 cycles/int
+       Comparison to C's rand():
+	 598,766,703 random ints generated [ptr store in C loop]       ~ -2.63 cycles/int
+	  71,964,505 random ints generated [rand/store in C loop]      ~ -21.88 cycles/int
+	  71,954,027 random ints generated [rand in Haskell loop]      ~ -21.88 cycles/int
+	  71,954,389 random ints generated [rand/store in Haskell loop] ~ -21.88 cycles/int
+
+     Now 4 threads, reporting mean randoms-per-second-per-thread:
+       First, timing with System.Random interface:
+	  63,512,528 random ints generated [constant zero gen]         ~ -24.79 cycles/int
+	  12,128,406 random ints generated [System.Random stdGen]      ~ -129.83 cycles/int
+	      14,128 random ints generated [PureHaskell/reference]     ~ -111452.54 cycles/int
+	      28,352 random ints generated [PureHaskell]               ~ -55539.54 cycles/int
+	   1,451,664 random ints generated [Gladman inefficient]       ~ -1084.71 cycles/int
+	  13,397,974 random ints generated [Gladman]                   ~ -117.53 cycles/int
+	   1,582,927 random ints generated [IntelAES inefficient]      ~ -994.76 cycles/int
+	  22,284,215 random ints generated [IntelAES]                  ~ -70.66 cycles/int
+       Comparison to C's rand():
+	 321,710,129 random ints generated [ptr store in C loop]       ~ -4.89 cycles/int
+	   1,124,522 random ints generated [rand/store in C loop]      ~ -1400.27 cycles/int
+	   1,126,719 random ints generated [rand in Haskell loop]      ~ -1397.54 cycles/int
+	   1,473,265 random ints generated [rand/store in Haskell loop] ~ -1068.80 cycles/int
+
+And 12 threads:
+
+     Now 12 threads, reporting mean randoms-per-second-per-thread:
+       First, timing with System.Random interface:
+	  51,512,538 random ints generated [constant zero gen]         ~ 20.67 cycles/int
+	  10,422,615 random ints generated [System.Random stdGen]      ~ 102 cycles/int
+	      10,558 random ints generated [PureHaskell/reference]     ~ 100,857 cycles/int
+	      21,091 random ints generated [PureHaskell]               ~ 50,489 cycles/int
+	   1,081,750 random ints generated [Gladman inefficient]       ~ 984 cycles/int
+	   6,143,601 random ints generated [Gladman]                   ~ 173 cycles/int
+	   1,037,113 random ints generated [IntelAES inefficient]      ~ 1,027 cycles/int
+	   6,807,703 random ints generated [IntelAES]                  ~ 156 cycles/int
+       Comparison to C's rand():
+	 320,317,573 random ints generated [ptr store in C loop]       ~ 3.32 cycles/int
+	     670,323 random ints generated [rand/store in C loop]      ~ 1,589 cycles/int
+	     712,223 random ints generated [rand in Haskell loop]      ~ 1,495 cycles/int
+	     644,107 random ints generated [rand/store in Haskell loop] ~ 1,653 cycles/int
+
+81M randoms total per second, worse than the 4 thread 88.8M per second.
+
+And 24 threads (hyperthreading?)
+
+    Now 24 threads, reporting mean randoms-per-second-per-thread:
+     First, timing with System.Random interface:
+	14,270,704 random ints generated [constant zero gen]         ~ 29.08 cycles/int
+	 3,089,394 random ints generated [System.Random stdGen]      ~ 134 cycles/int
+	     3,938 random ints generated [PureHaskell/reference]     ~ 105,406 cycles/int
+	     7,916 random ints generated [PureHaskell]               ~ 52,436 cycles/int
+	   510,410 random ints generated [Gladman inefficient]       ~ 813 cycles/int
+	 2,418,117 random ints generated [Gladman]                   ~ 172 cycles/int
+	   454,070 random ints generated [IntelAES inefficient]      ~ 914 cycles/int
+	 2,119,325 random ints generated [IntelAES]                  ~ 196 cycles/int
+     Comparison to C's rand():
+       195,244,368 random ints generated [ptr store in C loop]       ~ 2.13 cycles/int
+	   391,122 random ints generated [rand/store in C loop]      ~ 1,061 cycles/int
+	   442,710 random ints generated [rand in Haskell loop]      ~ 938 cycles/int
+	   393,143 random ints generated [rand/store in Haskell loop] ~ 1,056 cycles/int
+
+
+
+
