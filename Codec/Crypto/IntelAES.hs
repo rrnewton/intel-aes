@@ -36,6 +36,7 @@ import Data.Word
 import Data.Tagged
 import Data.Serialize
 
+import qualified Data.Bits
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Internal as BI
@@ -187,7 +188,14 @@ instance BlockCipher x => CryptoRandomGen (BCtoCRG x) where
 	if req==total then return$ Right (cipher, newgen)
 	              else return$ Right (B.take req cipher, newgen)
 
-  reseed bs gen = newGen bs
+--  reseed bs gen = newGen bs
+reseed bs (BCtoCRG k _) = newGen (xorExtendBS (encode k) bs)
+xorExtendBS a b = B.append (B.pack$ B.zipWith Data.Bits.xor a b) rem
+      where
+      al = B.length a
+      bl = B.length b
+      rem | bl > al   = B.drop al b
+          | otherwise = B.drop bl a
 
 
 
