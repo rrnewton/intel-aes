@@ -60,7 +60,9 @@ int check_for_aes_instructions(void);
 
 #define ROUND_KEYS_UNALIGNED_TESTING
 
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
+
+#warning "Configuring for Linux or Darwin"
 
 #ifdef ROUND_KEYS_UNALIGNED_TESTING
 
@@ -80,6 +82,8 @@ int check_for_aes_instructions(void);
 #endif
 
 #else // if not __linux__
+
+#warning "Configuring for Windows..."
 
 #ifdef ROUND_KEYS_UNALIGNED_TESTING
 

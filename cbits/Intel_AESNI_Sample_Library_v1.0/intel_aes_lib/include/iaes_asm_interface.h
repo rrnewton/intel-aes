@@ -55,7 +55,7 @@ extern "C"
 #define MYSTDCALL 
 #endif
 
-#ifdef __linux__
+#if defined __linux__ || defined __APPLE__
 #ifndef __LP64__
 #define iEncExpandKey256 _iEncExpandKey256
 #define iEncExpandKey192 _iEncExpandKey192
@@ -79,8 +79,8 @@ extern "C"
 #define iEnc192_CTR _iEnc192_CTR
 #define iEnc256_CTR _iEnc256_CTR
 #define do_rdtsc    _do_rdtsc
-#endif
-#endif
+#endif // lp64
+#endif // linux
 	// prepearing the different key rounds, for enc/dec in asm
 	// expnaded key should be 16-byte aligned
 	// expanded key should have enough space to hold all key rounds (16 bytes per round) - 256 bytes would cover all cases (AES256 has 14 rounds + 1 xor)

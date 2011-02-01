@@ -42,6 +42,7 @@ extern "C" {
 #include <string.h>
 
 
+
 void intel_AES_enc128(UCHAR *plainText,UCHAR *cipherText,UCHAR *key,size_t numBlocks)
 {
 	DEFINE_ROUND_KEYS
@@ -260,16 +261,13 @@ void intel_AES_encdec128_CTR(UCHAR *in,UCHAR *out,UCHAR *key,size_t numBlocks,UC
 
 
 
-#ifndef __linux__
-
-#include <intrin.h>
-
-#else
-
+#if defined __linux__ || defined __APPLE__ 
 static void __cpuid(unsigned int where[4], unsigned int leaf) {
   asm volatile("cpuid":"=a"(*where),"=b"(*(where+1)), "=c"(*(where+2)),"=d"(*(where+3)):"a"(leaf));
   return;
 }
+#else // windows
+#include <intrin.h>
 #endif
 
 /* 

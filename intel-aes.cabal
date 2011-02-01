@@ -9,8 +9,23 @@ Author:			Ryan Newton <rrnewton@gmail.com>, Svein Ove Aas <svein.ove@aas.no>, Th
 Copyright:              Copyright (c) 2011 Intel Corporation
 Synopsis: Hardware accelerated AES encryption and RNG.
 Description: 
-             AES encryption with hardware acceleration.  Plus,
+             AES encryption with optional hardware acceleration.  Plus,
              statistically sound, splittable random number generation based on AES.
+
+     Here are some example results from an Intel X5680 processor.
+
+      How many random numbers can we generate in a second on one thread?
+	  First, timing with System.Random interface:
+	     14,482,725 random ints generated [System.Random stdGen]    
+		 16,061 random ints generated [PureHaskell/reference]   
+		 32,309 random ints generated [PureHaskell]             
+	      2,401,893 random ints generated [Gladman inefficient]     
+	     15,980,625 random ints generated [Gladman]                 
+	      2,329,500 random ints generated [IntelAES inefficient]    
+	     32,383,799 random ints generated [IntelAES]                
+	 Comparison to C's rand():
+	     71,347,778 random ints generated [rand in Haskell loop]    
+
 
 Category: Cryptography
 Cabal-Version: >=1.8
@@ -36,7 +51,7 @@ extra-source-files:
     , cbits/Makefile
     , cbits/c_test.c
 
-    -- And including the gladman implementation for now as well:
+    -- Including the gladman implementation for now as well:
     , cbits/gladman/aes.h, cbits/gladman/aesopt.h, cbits/gladman/aestab.h
     , cbits/gladman/brg_endian.h, cbits/gladman/brg_types.h, cbits/gladman/aes.txt
     , cbits/gladman/aes_via_ace.h, cbits/gladman/ctr_inc.h
@@ -61,15 +76,9 @@ library
                  ,  Codec.Encryption.AESAux
                  ,  Codec.Utils
   GHC-Options: -O2 
-  -- I can't get it to link this with an absolute path:
   extra-libraries: intel_aes
 
-  -- HACK: These lines will get automatically REPLACED at configure time:
-  extra-lib-dirs: ./cbits/
---  ld-options: HACKME
-  -- END_HACK
-
-  -- The gladman sources are straightforward and can be built by Cabal:
+  -- The gladman sources are straightforward and can be built by Cabal (unlike the intel C/asm)
   C-sources: cbits/gladman/aescrypt.c, cbits/gladman/aeskey.c, cbits/gladman/aestab.c,
              cbits/gladman/aes_modes.c, cbits/gladman/ctr_inc.c
   Include-Dirs: cbits
@@ -79,12 +88,12 @@ library
 -- ----------------------------------------------------------------------------------------------------
 Executable benchmark-intel-aes-rng
   Main-is:        SimpleRNGBench.hs
-  Build-Depends:  base, split, rdtsc, unix, random, crypto-api, DRBG,
-                  tagged, cereal, bytestring, process, haskell98, time, intel-aes
+  Build-Depends:  base, split, rdtsc, unix, random, crypto-api, DRBG
+                , tagged, cereal, bytestring, process, haskell98, time
+                , intel-aes
   GHC-Options:    -O2 -threaded -rtsopts 
   C-sources:	   cbits/c_test.c
   Include-dirs:    cbits
-
 
 
 
