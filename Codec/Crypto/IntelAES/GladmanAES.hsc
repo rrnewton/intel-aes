@@ -2,19 +2,23 @@
 -- Svein Ove Aas (University of Tromsø), though it is heavily modified
 -- and any bugs should be blamed on me, Thomas M. DuBuisson.
 {-# LANGUAGE FlexibleInstances, EmptyDataDecls, FlexibleContexts, 
-    ForeignFunctionInterface, ViewPatterns #-}
+    ForeignFunctionInterface, ViewPatterns, ScopedTypeVariables #-}
 {-# CFILES cbits/gladman/aescrypt.c cbits/gladman/aeskey.c cbits/gladman/aestab.c cbits/gladman/aes_modes.c #-}
-module Codec.Crypto.GladmanAES
+module Codec.Crypto.IntelAES.GladmanAES
 	( AES
 	, N128, N192, N256
+	, mkAESGen, mkAESGen0
 	, module Crypto.Classes
-	, module Crypto.Modes) where
+	, module Crypto.Modes
+	) where
 
+import qualified Codec.Crypto.ConvertRNG as CR
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as BI
 import Crypto.Modes
 import Crypto.Classes
 import Crypto.Types
+import Crypto.Random (CryptoRandomGen(..))
 import Data.Tagged
 import Data.Serialize
 
@@ -36,6 +40,23 @@ data AES n = AES
 		{ encCtx :: EncryptCtxP
 		, decCtx :: DecryptCtxP
 		, aesKeyRaw :: B.ByteString }
+
+
+mkAESGen :: Int -> CR.CRGtoRG (CR.BCtoCRG (AES N128))
+mkAESGen int = CR.convertCRG gen
+ where
+  Right (gen :: CR.BCtoCRG (AES N128)) = newGen (B.append halfseed halfseed )
+  halfseed = encode word64
+  word64 = fromIntegral int :: Word64
+
+mkAESGen0 :: Int -> CR.CRGtoRG0 (CR.BCtoCRG (AES N128))
+mkAESGen0 int = CR.CRGtoRG0 gen
+ where
+  Right (gen :: CR.BCtoCRG (AES N128)) = newGen (B.append halfseed halfseed )
+  halfseed = encode word64
+  word64 = fromIntegral int :: Word64
+
+----------------------------------------------------------------------------------------------------
 
 -- | Create an encryption/decryption context for incremental
 -- encryption/decryption

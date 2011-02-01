@@ -69,7 +69,8 @@ library
 
   exposed-modules:  Codec.Encryption.BurtonRNGSlow
                  ,  Codec.Crypto.IntelAES
-                 ,  Codec.Crypto.GladmanAES
+                 ,  Codec.Crypto.IntelAES.AESNI
+                 ,  Codec.Crypto.IntelAES.GladmanAES
   other-modules:    Data.LargeWord 
                  ,  Benchmark.BinSearch
                  ,  Codec.Encryption.AES
@@ -90,6 +91,7 @@ Executable benchmark-intel-aes-rng
   Main-is:        SimpleRNGBench.hs
   Build-Depends:  base >= 4 && < 5, split, rdtsc, unix, random, crypto-api, DRBG
                 , tagged, cereal, bytestring, process, haskell98, time
+                , AES
                 , intel-aes
   GHC-Options:    -O2 -threaded -rtsopts 
   C-sources:	   cbits/c_test.c

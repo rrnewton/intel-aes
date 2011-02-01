@@ -9,8 +9,12 @@ module Main where
 
 import qualified Codec.Encryption.BurtonRNGSlow as BS
 
-import qualified Codec.Crypto.GladmanAES        as GA
-import qualified Codec.Crypto.IntelAES          as IA
+import qualified Codec.Crypto.IntelAES.GladmanAES  as GA
+import qualified Codec.Crypto.IntelAES.AESNI       as NI
+import qualified Codec.Crypto.IntelAES             as IA
+import qualified Codec.Crypto.ConvertRNG           as CR
+
+-- import qualified Codec.Crypto.AES.Random        as Svein
 
 import System.Exit (exitSuccess, exitFailure)
 import System.Environment
@@ -44,23 +48,6 @@ import Foreign.Storable (peek,poke)
 
 import Benchmark.BinSearch
 
-----------------------------------------------------------------------------------------------------
--- TEMP: MOVE ME ELSEWHERE:
-
-mkAESGen_gladman :: Int -> IA.LiftCRG (IA.BCtoCRG (GA.AES GA.N128))
-mkAESGen_gladman int = IA.convertCRG gen
- where
-  Right (gen :: IA.BCtoCRG (GA.AES GA.N128)) = newGen (B.append halfseed halfseed )
-  halfseed = encode word64
-  word64 = fromIntegral int :: Word64
-
-
-mkAESGen_gladman0 :: Int -> IA.LiftCRG0 (IA.BCtoCRG (GA.AES GA.N128))
-mkAESGen_gladman0 int = IA.LiftCRG0 gen
- where
-  Right (gen :: IA.BCtoCRG (GA.AES GA.N128)) = newGen (B.append halfseed halfseed )
-  halfseed = encode word64
-  word64 = fromIntegral int :: Word64
 
 
 ----------------------------------------------------------------------------------------------------
@@ -299,7 +286,7 @@ main = do
    let (opts,_,other) = getOpt Permute options argv
 
    when (Test `elem` opts)$ do
-       IA.testIntelAES
+       NI.testIntelAES
        exitSuccess
 
    when (not$ null other) $ do
@@ -320,16 +307,21 @@ main = do
    freq <- measure_freq2
    putStrLn$ "  Approx clock frequency:  " ++ commaint freq
 
+--   svein <- Svein.newAESGen
+
    let gamut th = do
        putStrLn$ "  First, timing with System.Random interface:"
        timeit th freq "constant zero gen" (const NoopRNG)
        timeit th freq "System.Random stdGen" mkStdGen
        timeit th freq "PureHaskell/reference" BS.mkBurtonGen_reference
        timeit th freq "PureHaskell"           BS.mkBurtonGen
-       timeit th freq "Gladman inefficient"     mkAESGen_gladman0
-       timeit th freq "Gladman"                 mkAESGen_gladman
-       timeit th freq "IntelAES inefficient"    IA.mkAESGen0
-       timeit th freq "IntelAES"                IA.mkAESGen
+       timeit th freq "Gladman inefficient"     GA.mkAESGen0
+       timeit th freq "Gladman"                 GA.mkAESGen
+--       timeit th freq "Svein's Gladman package" (const svein)
+       timeit th freq "IntelAES inefficient"    NI.mkAESGen0
+       timeit th freq "IntelAES"                NI.mkAESGen
+       timeit th freq "Compound gladman/intel"  IA.mkAESGen
+
 
        when (not$ NoC `elem` opts) $ do
 	  putStrLn$ "  Comparison to C's rand():"
