@@ -28,12 +28,8 @@ main = do
     , cleanHook = my_clean
     }
 
--- global_var_hack = unsafePerformIO (newIORef "UNSETVARIABLE")
--- Even worse, a file will be our global variable:
+-- A file will be our global variable:
 tmpfile = ".temp.install_dir.txt"
-
-
--- preConf :: Args -> ConfigFlags -> IO HookedBuildInfo
 
 --------------------------------------------------------------------------------
 my_clean :: PackageDescription -> () -> UserHooks -> CleanFlags -> IO ()
@@ -67,9 +63,6 @@ my_postConf args conf desc localinfo = do
 --------------------------------------------------------------------------------
 -- Patch a package description for our quirky builda:
 patchDesc desc localinfo = do
---      desc2 = stripDesc desc
-  let desc2 = desc
-
   let libd  = libdir$ absoluteInstallDirs desc localinfo NoCopyDest
   -- This is lame but I'm not sure how to get the same information at the preBuild step.
   -- writeIORef global_var_hack libd
@@ -79,21 +72,20 @@ patchDesc desc localinfo = do
  
   root <- getCurrentDirectory
   -- Let's try a friendlier way to change the options:
-  let Just lib = library desc2
+  let Just lib = library desc
       lbi  = libBuildInfo lib 
       oldO = ldOptions  lbi
-
       -- I'm not sure what the best policy is.  For now I'm adding
-      -- BOTH the build dir and the eventual install dir.
+      -- BOTH the build dir and the eventual install dir...
+      -- This will allow the package to function when it is built-but-not-installed.
       newO = ("-Wl,-rpath=" ++ libd) : 
 	     ("-Wl,-rpath=" ++ cbitsd) : 
 	     oldO
       cbitsd = root++"/cbits/"
-
       newlbi = lbi { ldOptions = newO 
 		   , extraLibDirs = cbitsd : extraLibDirs lbi }
       -- Whew... nested record updates are painful:
-      desc3 = desc2 { library = Just (lib { libBuildInfo = newlbi})}
+      desc3 = desc { library = Just (lib { libBuildInfo = newlbi})}
 
   putStrLn$ "  [intel-aes] Modified package info. " 
   return desc3
@@ -114,7 +106,6 @@ filt str = not (isInfixOf "intel_aes" str)
 ------------------------------------------------------------
 my_preBuild :: Args -> BuildFlags -> IO HookedBuildInfo
 my_preBuild args flags = do 
-
   putStrLn$ "\n================================================================================"
   putStrLn$ "  [intel-aes] Running Makefile to build C/asm source..."
   rootdir <- getCurrentDirectory 
@@ -134,20 +125,16 @@ my_build desc linfo hooks flags = do
   (buildHook simpleUserHooks) desc2 linfo hooks flags
   putStrLn$ "  [intel-aes] Build action finished.\n\n"
 
-
-
 --------------------------------------------------------------------------------
 my_install :: PackageDescription -> LocalBuildInfo -> UserHooks -> InstallFlags -> IO ()
 my_install desc linfo hooks flags = do 
   putStrLn$ "  [intel-aes] Install action:"
   putStrLn$ "\n================================================================================"
-
   desc2 <- patchDesc desc linfo
-
-  --libd <- readIORef global_var_hack 
   libd <- readFile tmpfile 
   let dest = (libd ++ "/libintel_aes.so")
   putStrLn$ "  [intel-aes] Copying shared library to: " ++ show dest
+  system$ "mkdir -p "++ libd -- NONPORTABLE
   copyFile "./cbits/libintel_aes.so" dest
   putStrLn$ "  [intel-aes] Done copying."
   -- removeFile tmpfile -- Might install more than once, right?
