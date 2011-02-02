@@ -10,6 +10,7 @@
 
   -}
 {-# OPTIONS_GHC -fwarn-unused-imports #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 
 module Codec.Crypto.IntelAES
     (
@@ -19,7 +20,7 @@ module Codec.Crypto.IntelAES
 where 
 
 import qualified Codec.Crypto.IntelAES.AESNI      as NI
-import qualified Codec.Crypto.IntelAES.GladmanAES as GL
+-- import qualified Codec.Crypto.IntelAES.GladmanAES as GL
 
 -- import System.Random 
 -- import System.IO.Unsafe (unsafePerformIO)
@@ -57,3 +58,5 @@ import qualified Codec.Crypto.IntelAES.GladmanAES as GL
 
 mkAESGen = NI.mkAESGen
 
+-- int check_for_aes_instructions()
+foreign import ccall unsafe "iaesni.h" check_for_aes_instructions :: IO Bool

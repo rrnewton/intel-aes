@@ -30,24 +30,20 @@ import Codec.Crypto.ConvertRNG
 
 import System.Random 
 import System.IO.Unsafe (unsafePerformIO)
-import GHC.IO (unsafeDupablePerformIO)
+-- import GHC.IO (unsafeDupablePerformIO)
 
 import Data.List
 import Data.Word
 import Data.Tagged
 import Data.Serialize
 
-import qualified Data.Bits
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as BC
 import qualified Data.ByteString.Internal as BI
 
 import Crypto.Random.DRBG ()
-import Crypto.Modes
 
-import Crypto.Random (CryptoRandomGen(..), GenError(..), splitGen, genBytes)
-import Crypto.Classes (BlockCipher(..), blockSizeBytes)
-import Crypto.Types
+import Crypto.Random (CryptoRandomGen(..))
+import Crypto.Classes (BlockCipher(..))
 
 import Control.Monad
 import Foreign.Ptr
@@ -106,7 +102,7 @@ foreign import ccall unsafe "iaesni.h" intel_AES_encdec256_CTR :: Ptr Word8 -> P
 foreign import ccall unsafe "stdlib.h" malloc :: Int -> IO (Ptr Word8)
 foreign import ccall unsafe "stdlib.h" calloc :: Int -> Int -> IO (Ptr Word8)
 
-foreign import ccall unsafe "c_test.c" temp_test128 :: IO ()
+-- foreign import ccall unsafe "c_test.c" temp_test128 :: IO ()
 
 ----------------------------------------------------------------------------------------------------
 

@@ -7,7 +7,7 @@ Stability:              Beta
 Maintainer:		Ryan Newton <rrnewton@gmail.com>
 Author:			Ryan Newton <rrnewton@gmail.com>, Svein Ove Aas <svein.ove@aas.no>, Thomas M. DuBuisson
 Copyright:              Copyright (c) 2011 Intel Corporation
-Synopsis: Hardware accelerated AES encryption and RNG.
+Synopsis:               Hardware accelerated AES encryption and RNG.
 Description: 
              AES encryption with optional hardware acceleration.  Plus,
              statistically sound, splittable random number generation based on AES.
@@ -70,7 +70,8 @@ library
   exposed-modules:  Codec.Encryption.BurtonRNGSlow
                  ,  Codec.Crypto.IntelAES
                  ,  Codec.Crypto.IntelAES.AESNI
-                 ,  Codec.Crypto.IntelAES.GladmanAES
+--                 ,  Codec.Crypto.IntelAES.GladmanAES
+                 ,  Codec.Crypto.GladmanAES
   other-modules:    Data.LargeWord 
                  ,  Benchmark.BinSearch
                  ,  Codec.Encryption.AES
@@ -91,7 +92,7 @@ Executable benchmark-intel-aes-rng
   Main-is:        SimpleRNGBench.hs
   Build-Depends:  base >= 4 && < 5, split, rdtsc, unix, random, crypto-api, DRBG
                 , tagged, cereal, bytestring, process, haskell98, time
-                , AES
+--                , AES
                 , intel-aes
   GHC-Options:    -O2 -threaded -rtsopts 
   C-sources:	   cbits/c_test.c
