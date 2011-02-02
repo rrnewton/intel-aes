@@ -202,3 +202,13 @@ Ok... I tried rebuilding the library by hand to get a .so
     gcc -shared -dynamic  -o lib/x64/libintel_aes64.so obj/x64/*.o
 
 
+
+
+[2011.02.02] {Annoying link problems}
+
+In commit 4bf79dfe55.. I reverted some recent refactorings to fix the weird link problem.
+
+     Linking dist/build/benchmark-intel-aes-rng/benchmark-intel-aes-rng ...
+     /home/newton/Dropbox/working_copies/intel-aes/dist/build/libHSintel-aes-0.1.1.a(GladmanAES.o): In function `s3iP_info':
+     (.text+0x34c3): undefined reference to `__stginit_intelzmaeszm0zi1zi1_CodecziCryptoziConvertRNG_'
+     collect2: ld returned 1 exit status

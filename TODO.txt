@@ -8,4 +8,7 @@ Here are the major TODO items:
 
   * Include the Intel AES sample library!
 
-  
+  * Use template haskell or quasiquoting to check whether to use AESNI
+    at INSTALL TIME not at runtime.
+
+

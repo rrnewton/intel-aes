@@ -16,7 +16,7 @@
 
 module Codec.Crypto.IntelAES.AESNI
     (
-      testIntelAES
+      testAESNI
     , mkAESGen, SimpleAESRNG
 
     -- Inefficient version for testing:
@@ -199,7 +199,7 @@ unpack_ptr ptr len = loop len []
 		  loop (i-1) (x:acc)
 
 -- This is not a meaningful test yet... one option would be to reproduce the tests in aessample.c
-testIntelAES = do 
+testAESNI = do 
 
   let bytes = 256
   plaintext  <- calloc bytes 1

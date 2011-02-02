@@ -10,7 +10,7 @@ module Main where
 import qualified Codec.Encryption.BurtonRNGSlow as BS
 
 --import qualified Codec.Crypto.IntelAES.GladmanAES  as GA
-import qualified Codec.Crypto.GladmanAES  as GA
+import qualified Codec.Crypto.GladmanAES           as GA
 import qualified Codec.Crypto.IntelAES.AESNI       as NI
 import qualified Codec.Crypto.IntelAES             as IA
 import qualified Codec.Crypto.ConvertRNG           as CR
@@ -303,7 +303,8 @@ main = do
    let (opts,_,other) = getOpt Permute options argv
 
    when (Test `elem` opts)$ do
-       NI.testIntelAES
+       IA.testIntelAES
+       NI.testAESNI
        exitSuccess
 
    when (not$ null other) $ do
@@ -334,10 +335,13 @@ main = do
        timeit th freq "PureHaskell"           BS.mkBurtonGen
 --       timeit th freq "Gladman inefficient"     GA.mkAESGen0
 --       timeit th freq "Gladman"                 GA.mkAESGen
+       timeit th freq "Gladman inefficient"     mkAESGen_gladman0
+       timeit th freq "Gladman"                 mkAESGen_gladman
+       timeit th freq "Compound gladman/intel"  IA.mkAESGen
 --       timeit th freq "Svein's Gladman package" (const svein)
        timeit th freq "IntelAES inefficient"    NI.mkAESGen0
        timeit th freq "IntelAES"                NI.mkAESGen
-       timeit th freq "Compound gladman/intel"  IA.mkAESGen
+
 
        when (not$ NoC `elem` opts) $ do
 	  putStrLn$ "  Comparison to C's rand():"

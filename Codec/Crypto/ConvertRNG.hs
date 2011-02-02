@@ -138,7 +138,7 @@ instance BlockCipher x => CryptoRandomGen (BCtoCRG x) where
 					 Just x  -> Right (BCtoCRG x 0)
   genSeedLength = Tagged 128
 
-  -- If this is called for less than blockSize data 
+  -- If this is called for less than blockSize data there's some waste but it should work.
   genBytes req (BCtoCRG (bcgen :: k) counter) = 
       -- What's the most efficient way to do this?
       unsafePerformIO $ do  -- Potentially heavyweight... not allowing dupable.
@@ -162,8 +162,8 @@ instance BlockCipher x => CryptoRandomGen (BCtoCRG x) where
 	if req==total then return$ Right (cipher, newgen)
 	              else return$ Right (B.take req cipher, newgen)
 
---  reseed bs gen = newGen bs
-reseed bs (BCtoCRG k _) = newGen (xorExtendBS (encode k) bs)
+  reseed bs (BCtoCRG k _) = newGen (xorExtendBS (encode k) bs)
+
 xorExtendBS a b = B.append (B.pack$ B.zipWith Data.Bits.xor a b) rem
       where
       al = B.length a

@@ -10,53 +10,101 @@
 
   -}
 {-# OPTIONS_GHC -fwarn-unused-imports #-}
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE ForeignFunctionInterface, CPP, ScopedTypeVariables  #-}
 
 module Codec.Crypto.IntelAES
     (
       mkAESGen
      -- Plus, instances exported of course.
+    , testIntelAES
     )
 where 
 
 import qualified Codec.Crypto.IntelAES.AESNI      as NI
--- import qualified Codec.Crypto.IntelAES.GladmanAES as GL
+import qualified Codec.Crypto.GladmanAES as GA
+import GHC.IO (unsafeDupablePerformIO)
+import Data.Tagged
+import Data.Word
+import Data.Serialize
+import qualified Data.ByteString as B
+import Crypto.Random (CryptoRandomGen(..), GenError(..), splitGen, genBytes)
+import Crypto.Types
+import Codec.Crypto.ConvertRNG 
+import Debug.Trace
 
--- import System.Random 
--- import System.IO.Unsafe (unsafePerformIO)
--- import GHC.IO (unsafeDupablePerformIO)
+newtype CompoundCRG = 
+  CompoundCRG 
+   (Either (BCtoCRG (NI.IntelAES NI.N128))
+	   (BCtoCRG (GA.AES GA.N128)))
 
--- import Data.List
--- import Data.Word
--- import Data.Tagged
--- import Data.Serialize
+type CompoundAESRNG = CRGtoRG CompoundCRG
 
--- import qualified Data.Bits
--- import qualified Data.ByteString as B
--- import qualified Data.ByteString.Char8 as BC
--- import qualified Data.ByteString.Internal as BI
-
--- import Crypto.Random.DRBG ()
--- import Crypto.Modes
-
--- import Crypto.Random (CryptoRandomGen(..), GenError(..), splitGen, genBytes)
--- import Crypto.Classes (BlockCipher(..), blockSizeBytes)
--- import Crypto.Types
-
--- import Control.Monad
--- import Foreign.Ptr
--- import qualified Foreign.ForeignPtr as FP
--- import Foreign.Storable
+mkAESGen :: Int -> CompoundAESRNG
+mkAESGen int = convertCRG gen
+ where
+  Right (gen :: CompoundCRG) = newGen (B.append halfseed halfseed )
+  halfseed = encode word64
+  word64 = fromIntegral int :: Word64
 
 
--- type CompoundAESRNG = (LiftCRG (BCtoCRG (IntelAES N128)))
---     Either (LiftCRG (BCtoCRG (IntelAES N128)))
---	    ()
+-- foreign import ccall unsafe "iaesni.h" check_for_aes_instructions :: IO Bool
+foreign import ccall unsafe "iaesni.h" check_for_aes_instructions :: Bool
 
---mkAESGen :: Int -> CompoundAESRNG
---mkAESGen = undecidable
 
-mkAESGen = NI.mkAESGen
+{-# INLINE mapRight #-}
+mapRight fn x@(Left _) = x
+mapRight fn (Right x)  = Right$ fn x
 
--- int check_for_aes_instructions()
-foreign import ccall unsafe "iaesni.h" check_for_aes_instructions :: IO Bool
+{-# INLINE mapSnd #-}
+mapSnd fn (x,y) = (x,fn y)
+
+
+instance CryptoRandomGen CompoundCRG where 
+
+--  newGen :: B.ByteString -> Either GenError CompoundCRG
+  newGen = 
+--     if unsafeDupablePerformIO check_for_aes_instructions
+     trace ("Checked for AES instructions: "++ show check_for_aes_instructions)$
+     if check_for_aes_instructions
+     -- Ick, boilerplate:
+     then \bytes -> case newGen bytes of Left err  -> Left err
+					 Right gen -> Right$ CompoundCRG$ Left gen
+     else \bytes -> case newGen bytes of Left err  -> Left err
+					 Right gen -> Right$ CompoundCRG$ Right gen
+
+  genSeedLength = Tagged 128
+
+ 
+  -- ByteLength -> CompoundCRG -> Either GenError (B.ByteString, CompoundCRG)
+  genBytes req (CompoundCRG (Left gen)) = 
+#if 0
+    mapRight (mapSnd (CompoundCRG . Left) ) $ genBytes req gen
+#else
+    case genBytes req gen of 
+      Left  err  -> Left err
+      Right (bytes,gen') -> Right (bytes, CompoundCRG (Left gen'))
+#endif
+
+-- <boilerplate> OUCH
+  genBytes req (CompoundCRG (Right gen)) = 
+    case genBytes req gen of 
+      Left  err  -> Left err
+      Right (bytes,gen') -> Right (bytes, CompoundCRG (Right gen'))
+  reseed bs (CompoundCRG (Left gen)) = 
+    case reseed bs gen of 
+      Left  err  -> Left err
+      Right gen' -> Right (CompoundCRG (Left gen'))
+  reseed bs (CompoundCRG (Right gen)) = 
+    case reseed bs gen of 
+      Left  err  -> Left err
+      Right gen' -> Right (CompoundCRG (Right gen'))
+-- </boilerplate>
+
+
+
+testIntelAES = do 
+  putStrLn$ "Running crude tests."
+--  b <- check_for_aes_instructions
+  let b = check_for_aes_instructions
+  putStrLn$ "Machine supports AESNI: "++ show b
+

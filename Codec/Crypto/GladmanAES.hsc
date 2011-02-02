@@ -2,7 +2,9 @@
 -- Svein Ove Aas (University of Tromsø), though it is heavily modified
 -- and any bugs should be blamed on me, Thomas M. DuBuisson.
 {-# LANGUAGE FlexibleInstances, EmptyDataDecls, FlexibleContexts, 
-    ForeignFunctionInterface, ViewPatterns #-}
+    ForeignFunctionInterface, ViewPatterns,
+    ScopedTypeVariables
+    #-}
 {-# CFILES cbits/gladman/aescrypt.c cbits/gladman/aeskey.c cbits/gladman/aestab.c cbits/gladman/aes_modes.c #-}
 module Codec.Crypto.GladmanAES
 	( AES
@@ -22,6 +24,14 @@ import Foreign
 import Control.Applicative
 import Control.Monad
 
+-- import Crypto.Random (CryptoRandomGen(newGen))
+-- The following line will cause a link problem currently [2011.02.02]:
+     -- Linking dist/build/benchmark-intel-aes-rng/benchmark-intel-aes-rng ...
+     -- /home/newton/Dropbox/working_copies/intel-aes/dist/build/libHSintel-aes-0.1.1.a(GladmanAES.o): In function `s3ho_info':
+     -- (.text+0x34c3): undefined reference to `__stginit_intelzmaeszm0zi1zi1_CodecziCryptoziConvertRNG_'
+     -- collect2: ld returned 1 exit status
+-- import qualified Codec.Crypto.ConvertRNG as CR
+
 #include "gladman/aesopt.h"
 #include "gladman/aes.h"
 #include "gladman/aestab.h"
@@ -36,6 +46,26 @@ data AES n = AES
 		{ encCtx :: EncryptCtxP
 		, decCtx :: DecryptCtxP
 		, aesKeyRaw :: B.ByteString }
+
+
+-- Because of the above link problem I can't move these:
+{-
+mkAESGen :: Int -> CR.CRGtoRG (CR.BCtoCRG (AES N128))
+mkAESGen int = CR.convertCRG gen
+ where
+  Right (gen :: CR.BCtoCRG (AES N128)) = newGen (B.append halfseed halfseed )
+  halfseed = encode word64
+  word64 = fromIntegral int :: Word64
+
+mkAESGen0 :: Int -> CR.CRGtoRG0 (CR.BCtoCRG (AES N128))
+mkAESGen0 int = CR.CRGtoRG0 gen
+ where
+  Right (gen :: CR.BCtoCRG (AES N128)) = newGen (B.append halfseed halfseed )
+  halfseed = encode word64
+  word64 = fromIntegral int :: Word64
+ -}
+
+--------------------------------------------------------------------------------
 
 -- | Create an encryption/decryption context for incremental
 -- encryption/decryption
