@@ -8,6 +8,7 @@ import Distribution.PackageDescription
 import Distribution.Simple.LocalBuildInfo	
 import System.Cmd(system) 
 import System.Exit
+import qualified System.Info as Info
 import System.IO.Unsafe
 import System.Directory
 import Data.Maybe
@@ -107,12 +108,26 @@ filt str = not (isInfixOf "intel_aes" str)
 my_preBuild :: Args -> BuildFlags -> IO HookedBuildInfo
 my_preBuild args flags = do 
   putStrLn$ "\n================================================================================"
-  putStrLn$ "  [intel-aes] Running Makefile to build C/asm source..."
-  rootdir <- getCurrentDirectory 
-  setCurrentDirectory "./cbits/"
-  system "make"
-  setCurrentDirectory rootdir
-  putStrLn$ "  [intel-aes] Done with external build job."
+  let 
+      ext = case Info.os of 
+	      "linux"   -> ".so"
+	      "mac"     -> ".dylib"
+	      "windows" -> ".dll"
+	      _         -> error$ "Unexpected "
+      cached_so = "./cbits/prebuilt/libintel_aes_"++ Info.os ++"_"++ Info.arch ++ ext
+      dest = "./cbits/libintel_aes"++ext
+  e <- doesFileExist cached_so
+  if e then do 
+      putStrLn$ "  [intel-aes] Using prebuilt dynamic library: "++ cached_so
+      copyFile cached_so dest
+      putStrLn$ "  [intel-aes] Done copying into position: "++ dest
+  else do     
+      putStrLn$ "  [intel-aes] Running Makefile to build C/asm source..."
+      rootdir <- getCurrentDirectory 
+      setCurrentDirectory "./cbits/"
+      system "make"
+      setCurrentDirectory rootdir
+      putStrLn$ "  [intel-aes] Done with external build job."
   putStrLn$ "================================================================================\n"
 
   (preBuild simpleUserHooks) args flags

@@ -14,9 +14,10 @@
 
 module Codec.Crypto.IntelAES
     (
-      mkAESGen
+      mkAESGen,
+      CompoundAESRNG(), 
      -- Plus, instances exported of course.
-    , testIntelAES
+      testIntelAES
     )
 where 
 
@@ -37,8 +38,12 @@ newtype CompoundCRG =
    (Either (BCtoCRG (NI.IntelAES NI.N128))
 	   (BCtoCRG (GA.AES GA.N128)))
 
+-- | The type representing an AES-based random number generator which
+-- | will use AESNI instructions when available, and invoke the
+-- | portable Gladman implementation when not.
 type CompoundAESRNG = CRGtoRG CompoundCRG
 
+-- | 
 mkAESGen :: Int -> CompoundAESRNG
 mkAESGen int = convertCRG gen
  where
@@ -77,6 +82,7 @@ instance CryptoRandomGen CompoundCRG where
  
   -- ByteLength -> CompoundCRG -> Either GenError (B.ByteString, CompoundCRG)
   genBytes req (CompoundCRG (Left gen)) = 
+-- Let's try to reduce that boilerplate if we can...
 #if 0
     mapRight (mapSnd (CompoundCRG . Left) ) $ genBytes req gen
 #else
