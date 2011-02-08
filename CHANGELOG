@@ -3,8 +3,8 @@ Note, in addition to nice, tidy CHANGELOG, there's also a verbose DEVLOG below.
 
 Version 0.1.1 -- Initial release
 
-
-DEVLOG:
+--------------------------------------------------------------------------------
+   DEVLOG:
 --------------------------------------------------------------------------------
 
 [2011.01.28] {unexpected performance bump}
@@ -212,3 +212,52 @@ In commit 4bf79dfe55.. I reverted some recent refactorings to fix the weird link
      /home/newton/Dropbox/working_copies/intel-aes/dist/build/libHSintel-aes-0.1.1.a(GladmanAES.o): In function `s3iP_info':
      (.text+0x34c3): undefined reference to `__stginit_intelzmaeszm0zi1zi1_CodecziCryptoziConvertRNG_'
      collect2: ld returned 1 exit status
+
+
+[2011.02.07] {Trying to build in windows, not having much luck}
+.
+I tried to get it to work with gcc 4.3.4, that failed for lack of intrin.h.
+
+I tried to actually add the ../VC/bin directory to my path so I could
+run cl.exe.  Then I tried the .bat file that came with the Intel
+Sample library.  It seemed to get to the final "lib.exe" call at which
+point it silently fails (errro code 127) with no message.
+
+
+[2011.02.07] {Haddock problems}
+
+I'm having a variety of different problems trying to build
+documentation for this package.  If I do "runhaskell Setup.hs haddock"
+I get the following:
+
+
+     GHCi runtime linker: fatal error: I found a duplicate definition for symbol
+	__hscore_S_IFDIR
+     whilst processing object file
+	/home/newton/.cabal/lib/directory-1.0.1.2/ghc-7.0.1/HSdirectory-1.0.1.2.o
+     This could be caused by:
+	* Loading two different object files which export the same symbol
+	* Specifying the same object file twice on the GHCi command line
+	* An incorrect `package.conf' entry, causing some object to be
+	  loaded twice.
+     GHCi cannot safely continue in this situation.  Exiting now.  Sorry.
+
+
+If I try "cabal haddock" it fails silently with error code 127.
+
+But if I run "haddock" by hand on the .hs files it seems to work ok.
+
+At one point I thought I was dealing with this problem:
+    http://hackage.haskell.org/trac/hackage/ticket/656
+
+In particular I believe I ran into this error:
+    cabal: Can't find transitive deps for haddock
+
+
+[2011.02.07] {Ah, the error 127 business above was really a cabal problem}
+
+I must be crashing cabal silently with my intel-aes.cabal file.
+Nope.. that's not it dist/setup/setup lost it's execute bit (thanks
+dropbox) and that completely flummoxed cabal.
+
+The "cabal haddock" option above DOES result in the transitive deps error.

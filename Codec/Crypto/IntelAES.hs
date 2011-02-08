@@ -1,7 +1,13 @@
 {-|
+     Module      :  Codec.Crypto.IntelAES
+     Copyright   :  (c) Ryan Newton 2011
+     License     :  BSD-style (see the file LICENSE)
+     Maintainer  :  rrnewton@gmail.com
+     Stability   :  experimental
+     Portability :  linux only (NEEDS PORTING)
 
      This module provides an AES implementation that will test the CPU
-     and use hardware acceleration where available, otherwise it will
+     ID and use hardware acceleration where available, otherwise it will
      fall back to Dr. Brian Gladman's software implementation.
 
      This module also exports a random number generator based on AES
@@ -38,18 +44,21 @@ newtype CompoundCRG =
    (Either (BCtoCRG (NI.IntelAES NI.N128))
 	   (BCtoCRG (GA.AES GA.N128)))
 
--- | The type representing an AES-based random number generator which
--- | will use AESNI instructions when available, and invoke the
--- | portable Gladman implementation when not.
+-- | A type representing an AES-based random number generator which
+--   will use AESNI instructions when available, and invoke the
+--   portable Gladman implementation when not.
 type CompoundAESRNG = CRGtoRG CompoundCRG
 
--- | 
+-- | Simple function to create a random number generator from an Int,
+--   analogous to `System.Random.newStdGen`.  Only 128-bit encryption
+--   is provided for now.
 mkAESGen :: Int -> CompoundAESRNG
 mkAESGen int = convertCRG gen
- where
+   where
   Right (gen :: CompoundCRG) = newGen (B.append halfseed halfseed )
   halfseed = encode word64
   word64 = fromIntegral int :: Word64
+
 
 
 -- foreign import ccall unsafe "iaesni.h" check_for_aes_instructions :: IO Bool

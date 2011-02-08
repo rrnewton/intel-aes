@@ -1,15 +1,22 @@
 {-|
+   Module      :  Codec.Crypto.ConvertRNG
+   Copyright   :  (c) Ryan Newton 2011
+   License     :  BSD-style (see the file LICENSE)
+   Maintainer  :  rrnewton@gmail.com
+   Stability   :  experimental
+   Portability :  portable, GHC
 
-     This module provides bridges between the interfaces:
+ This module bridges these three interfaces:
+
 @
-   System.Random.RandomGen 
-   Crypto.Random.CryptoRandomGen
    Crypto.Classes.BlockCipher
+   Crypto.Random.CryptoRandomGen
+   System.Random.RandomGen
 @
 
     Specifically, a block cipher can be converted to generate a
-    CryptoRandomGen, which in turn can be converted to provide the
-    RandomGen interface.
+    @CryptoRandomGen@, which in turn can be converted to provide the
+    @RandomGen@ interface.
 
   -}
 {-# OPTIONS_GHC -fwarn-unused-imports #-}
@@ -18,7 +25,7 @@
 
 module Codec.Crypto.ConvertRNG 
   ( BCtoCRG(..), convertCRG     
-  , CRGtoRG(..)
+  , CRGtoRG()
   , CRGtoRG0(..) -- Inefficient version for testing...
   )
 where
@@ -65,7 +72,7 @@ import Foreign.Storable
 
 
 -- | Converting CryptoRandomGen to RandomGen.
--- | This naive version is probably pretty inefficent:
+--   This naive version is probably pretty inefficent:
 data CRGtoRG0 a = CRGtoRG0 a
 instance CryptoRandomGen g => RandomGen (CRGtoRG0 g) where 
    next  (CRGtoRG0 g) = 
@@ -91,8 +98,8 @@ bytes_in_int = (round $ 1 + logBase 2 (fromIntegral (maxBound :: Int)))  `quot` 
 -- steps = 128 `quot` bits_in_int
 
 ------------------------------------------------------------
--- | Now let's try to make that a bit more efficient.
--- | Keep a buffer of random bits and an index into that buffer.
+-- | Converting CryptoRandomGen to RandomGen.
+--   Keep a buffer of random bits and an index into that buffer.
 data CRGtoRG a = CRGtoRG a 
     {-#UNPACK#-}!         (FP.ForeignPtr Int)
     {-#UNPACK#-}!         Int
@@ -113,6 +120,7 @@ instance CryptoRandomGen g => RandomGen (CRGtoRG g) where
 	 Right (g1,g2) -> (CRGtoRG g1 buf ind, convertCRG g2)
 
 
+-- | The constructor for CRGtoRG values.
 convertCRG :: CryptoRandomGen g => g -> CRGtoRG g
 convertCRG crg = CRGtoRG g' (FP.castForeignPtr ptr) 0
  where 
@@ -130,7 +138,8 @@ bufsize = 256
 -- We would also like every BlockCipher to constitute a valid CryptoRandomGen.
 -- Again there's the tension with UndecidableInstances vs explicit lifting.
 
--- When lifting we include a counter:
+-- | A BlockCipher can generate random numbers.
+--   When lifting we include a counter which increments as random numbers are generated:
 data BCtoCRG a = BCtoCRG a Word64
 
 instance BlockCipher x => CryptoRandomGen (BCtoCRG x) where 

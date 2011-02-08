@@ -3,11 +3,14 @@
 
    This module includes two all-haskell implementations of Burton
    Smith's algorithm for a statistically-sound binary tree of random
-   number generators.
+   number generators.  See the following thread:
 
-   http://www.mail-archive.com/haskell-cafe@haskell.org/msg83901.html
-   
- -}
+   <http://www.mail-archive.com/haskell-cafe@haskell.org/msg83901.html>
+
+   Generally, Codec.Crypto.IntelAES should be used in favor of this
+   module, but it is included for benchmarking purposes.
+
+-}
 
 module Codec.Encryption.BurtonRNGSlow
     (
@@ -29,28 +32,25 @@ import Data.LargeWord
 -- Reference implementation.
 
 -- | Type of random number generators
--- | This is a very simple but extremely inefficient vesion.
+--   This is a very simple but extremely inefficient vesion.
 data RNG_ref = RNG_ref {-# UNPACK #-} !Word128 -- Seed
                        {-# UNPACK #-} !Word128 -- Counter
 next128 (RNG_ref k c) = (encrypt k c, RNG_ref k (c+1))
 
 -- | This instance is inefficient because it creates 128bits of
--- | randomness but only uses an Int-sized (32 or 64 bit) subset of
--- | them.
+--   randomness but only uses an Int-sized (32 or 64 bit) subset of
+--   them.
 instance RandomGen RNG_ref where
   next g = (fromIntegral n, g')
    where (n,g') = next128 g
   split g@(RNG_ref k c) = (g', mkBurtonGen_reference n)
    where (n,g') = next128 g
 
+-- | Extra slow reference implementation.
 mkBurtonGen_reference :: Word128 -> RNG_ref
 mkBurtonGen_reference seed = RNG_ref seed 0
 
-
 --------------------------------------------------------------------------------
--- The idea with this one is that once we generate 128 bits of
--- randomness we parcel it out into two or four ints.
-
 bits_in_int = round $ 1 + logBase 2 (fromIntegral (maxBound :: Int))
 steps = 128 `quot` bits_in_int
 
@@ -61,6 +61,8 @@ data RNG = RNG {-# UNPACK #-} !Word128 -- Seed
 	       {-# UNPACK #-} !Word128 -- Counter
 	       {-# UNPACK #-} !Int     -- Phase/step
 
+-- | The idea with this one is that once we generate 128 bits of
+--   randomness we parcel it out into two or four ints.
 mkBurtonGen :: Word128 -> RNG
 mkBurtonGen seed = RNG seed (encrypt seed 0) 1 0
 

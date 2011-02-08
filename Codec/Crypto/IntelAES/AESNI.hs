@@ -1,14 +1,22 @@
 {- | 
-     This version provides an AES implementation that *assumes* AES-NI
+     Module      :  Codec.Crypto.IntelAES.AESNI
+     Copyright   :  (c) Ryan Newton 2011
+     License     :  BSD-style (see the file LICENSE)    
+     Maintainer  :  rrnewton@gmail.com
+     Stability   :  experimental
+     Portability :  linux only (NEEDS PORTING)
+
+
+     This module provides an AES implementation that /assumes/ AES-NI
      instructions are available on the processor.  It will be
      non-portable as a result.  Therefore, for most purposes
      Codec.Crypto.IntelAES should be used instead.
 
      Note: This module is simply a wrapper around the Intel-provided
      AESNI sample library, found here:
-@
-   http://software.intel.com/en-us/articles/download-the-intel-aesni-sample-library/
-@
+
+     <http://software.intel.com/en-us/articles/download-the-intel-aesni-sample-library/>
+
  -}
 {-# OPTIONS_GHC -fwarn-unused-imports #-}
 {-# LANGUAGE FlexibleInstances, EmptyDataDecls, FlexibleContexts, NamedFieldPuns,
@@ -18,6 +26,7 @@ module Codec.Crypto.IntelAES.AESNI
     (
       testAESNI
     , mkAESGen, SimpleAESRNG
+    , mkAESGen192, mkAESGen256
 
     -- Inefficient version for testing:
     , mkAESGen0, SimpleAESRNG0
@@ -52,9 +61,10 @@ import Foreign.Storable
 
 ----------------------------------------------------------------------------------------------------
 
+-- | The type of a simple 'System.Random.RandomGen' instance.
 type SimpleAESRNG = CRGtoRG (BCtoCRG (IntelAES N128))
 
--- Expose a simple System.Random.RandomGen interface:
+-- | Expose a simple System.Random.RandomGen interface using 128 bit encryption.  
 mkAESGen :: Int -> SimpleAESRNG
 mkAESGen int = convertCRG gen
  where
@@ -62,8 +72,21 @@ mkAESGen int = convertCRG gen
   halfseed = encode word64
   word64 = fromIntegral int :: Word64
 
+-- | Same thing for 192 bit encryption.
+mkAESGen192 :: B.ByteString -> CRGtoRG (BCtoCRG (IntelAES N192))
+mkAESGen192 seed = convertCRG gen
+ where
+  Right (gen :: BCtoCRG (IntelAES N192)) = newGen (B.take 24 seed)
 
--- TEMP: Inefficient version for testing:
+-- | Ditto for 256 bit encryption.
+mkAESGen256 :: B.ByteString -> CRGtoRG (BCtoCRG (IntelAES N256))
+mkAESGen256 seed = convertCRG gen
+ where
+  Right (gen :: BCtoCRG (IntelAES N256)) = newGen (B.take 24 seed)
+
+
+
+-- | TEMP: Inefficient version for testing.
 type SimpleAESRNG0 = CRGtoRG0 (BCtoCRG (IntelAES N128))
 mkAESGen0 :: Int -> SimpleAESRNG0
 mkAESGen0 int = CRGtoRG0 gen
@@ -198,9 +221,11 @@ unpack_ptr ptr len = loop len []
   loop i acc = do x    <- peekElemOff ptr (i-1)
 		  loop (i-1) (x:acc)
 
--- This is not a meaningful test yet... one option would be to reproduce the tests in aessample.c
-testAESNI = do 
 
+-- | This is not a meaningful test yet... one option would be to
+--   reproduce the tests in aessample.c
+testAESNI :: IO ()
+testAESNI = do 
   let bytes = 256
   plaintext  <- calloc bytes 1
   key        <- calloc 16 1

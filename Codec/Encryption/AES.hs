@@ -9,6 +9,8 @@
 -- Stability   :  experimental
 -- Portability :  portable
 --
+-- Pure Haskell AES implementation.
+-- 
 -- Takes the AES module supplied by Lukasz Anforowicz and wraps it so it can
 -- used with the standard modes.
 --
