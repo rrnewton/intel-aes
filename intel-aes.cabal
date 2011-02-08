@@ -92,6 +92,7 @@ library
   exposed-modules:  Codec.Encryption.BurtonRNGSlow
                  ,  Codec.Crypto.IntelAES
                  ,  Codec.Crypto.IntelAES.AESNI
+                 ,  Codec.Crypto.ConvertRNG
 --                 ,  Codec.Crypto.IntelAES.GladmanAES
                  ,  Codec.Crypto.GladmanAES
   other-modules:    Data.LargeWord 
