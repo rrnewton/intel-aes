@@ -3,8 +3,10 @@ UNAME=$(shell uname -m)
 
 # Must be 86 (for 32bit compiler) or 64 (for 64bit compiler)
 ARCH=64
+#ARCH=86
 # Must be 32 or 64:
 SZ=64
+#SZ=32
 
 STATIC=lib/x$(ARCH)/libintel_aes.a
 DYNAMIC=lib/x$(ARCH)/libintel_aes.so
@@ -17,7 +19,8 @@ OBJ= obj/x$(ARCH)/intel_aes.o \
      obj/x$(ARCH)/iaesx$(ARCH).o \
      obj/x$(ARCH)/do_rdtsc.o
 
-GCC=gcc
+# GCC=gcc -m32
+GCC=gcc 
 YASM=yasm
 YASMFLAGS= -D__linux__ -g dwarf2 -f elf$(SZ) 
 

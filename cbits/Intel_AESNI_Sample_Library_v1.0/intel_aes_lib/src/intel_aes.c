@@ -291,17 +291,29 @@ int check_for_aes_instructions()
  * ECX = 'l' 'e' 't' 'n'
  */
 	
+// AuthenticAMD
+
+    int intel = 1;
+    int amd   = 1;
 	if (memcmp((unsigned char *)&cpuid_results[1], "Genu", 4) != 0 ||
 		memcmp((unsigned char *)&cpuid_results[3], "ineI", 4) != 0 ||
 		memcmp((unsigned char *)&cpuid_results[2], "ntel", 4) != 0)
-		return no;
+		intel = 0;
 
-	__cpuid(cpuid_results,1);
+	if (memcmp((unsigned char *)&cpuid_results[1], "Auth", 4) != 0 ||
+		memcmp((unsigned char *)&cpuid_results[3], "enti", 4) != 0 ||
+		memcmp((unsigned char *)&cpuid_results[2], "cAMD", 4) != 0)
+		amd = 0;
 
-	if (cpuid_results[2] & AES_INSTRCTIONS_CPUID_BIT)
-		return yes;
+    if (intel || amd) 
+    {
+        __cpuid(cpuid_results,1);
 
-	return no;
+        if (cpuid_results[2] & AES_INSTRCTIONS_CPUID_BIT)
+            return yes;
+    } 
+    else 
+     return no;
 }
 
 

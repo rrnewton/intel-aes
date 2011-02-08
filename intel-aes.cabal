@@ -5,7 +5,8 @@ License:                BSD3
 License-file:           LICENSE
 Stability:              Beta
 Maintainer:		Ryan Newton <rrnewton@gmail.com>
-Author:			Ryan Newton <rrnewton@gmail.com>, Svein Ove Aas <svein.ove@aas.no>, Thomas M. DuBuisson
+Author:			Ryan Newton <rrnewton@gmail.com>, 
+                        Svein Ove Aas <svein.ove@aas.no>, Thomas M. DuBuisson <thomas.dubuisson@gmail.com>
 Copyright:              Copyright (c) 2011 Intel Corporation
 Synopsis:               Hardware accelerated AES encryption and RNG.
 HomePage:               https://github.com/rrnewton/intel-aes/wiki
