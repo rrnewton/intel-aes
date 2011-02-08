@@ -1,5 +1,5 @@
 Name:           intel-aes
-Version:        0.1.1
+Version:        0.1.2
 
 License:                BSD3
 License-file:           LICENSE
@@ -8,30 +8,27 @@ Maintainer:		Ryan Newton <rrnewton@gmail.com>
 Author:			Ryan Newton <rrnewton@gmail.com>, Svein Ove Aas <svein.ove@aas.no>, Thomas M. DuBuisson
 Copyright:              Copyright (c) 2011 Intel Corporation
 Synopsis:               Hardware accelerated AES encryption and RNG.
+HomePage:               https://github.com/rrnewton/intel-aes/wiki
 Description: 
   AES encryption with optional hardware acceleration.  Plus,
   statistically sound, splittable random number generation based on AES.
+  This package is nothing more than a wrapper around the Intel-provided
+  AESNI sample library which also includes a portable software
+  implementation of AES by Brian Gladman.  It contains C,
+  assembly, and Haskell sources.  And it includes prebuilt dynamic
+  libraries to make the build process less fragile.
+  (Rebuilding requires the @yasm@ assembler.)  But prebuilt shared
+  libraries are not included for all platforms yet.  (Volunteers
+  needed!)
 
-  The package is nothing more than a wrapper around the following Intel-provided AESNI
-  sample library that also includes a portable software implementation by Brian Gladman:
-
-    http://software.intel.com/en-us/articles/download-the-intel-aesni-sample-library/
-
-  The consists of C, assembly sources, and Haskell sources.  It
-  includes prebuilt dynamic libraries for these sources to make the
-  build process less fragile.  (Rebuilding requires the @yasm@
-  assembler.)  But prebuilt shared libraries are not included for all
-  platforms yet.  (Volunteers needed!)
-
-  Regarding portability, see:
-
-    https://github.com/rrnewton/intel-aes/issues/#issue/1
+  -- Regarding portability, see:
+  --   https://github.com/rrnewton/intel-aes/issues/#issue/1
 
   Finally, note that this package is currently triggering some haddock
   problems. A manually built copy of the documentation can be found
   at:
 
-    http://people.csail.mit.edu/newton/intel-aes-doc/
+    <http://people.csail.mit.edu/newton/intel-aes-doc/>
 
 -- Here are some example results from an Intel X5680 processor.
 

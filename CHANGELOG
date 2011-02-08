@@ -1,6 +1,6 @@
 Note, in addition to nice, tidy CHANGELOG, there's also a verbose DEVLOG below.
 
-
+Version 0.1.2 -- Unfortunate version bump to fix .cabal description.
 Version 0.1.1 -- Initial release
 
 --------------------------------------------------------------------------------
