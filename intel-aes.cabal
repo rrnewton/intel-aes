@@ -1,5 +1,5 @@
 Name:           intel-aes
-Version:        0.1.2
+Version:        0.1.2.1
 
 License:                BSD3
 License-file:           LICENSE
@@ -85,7 +85,7 @@ source-repository head
 ----------------------------------------------------------------------------------------------------
 library
   build-depends:  base >= 4 && < 5, random, DRBG, split, process, haskell98, time,
-                  DRBG, crypto-api, bytestring, cereal, tagged
+                  crypto-api, bytestring, cereal, tagged
 
   exposed-modules:  Codec.Encryption.BurtonRNGSlow
                  ,  Codec.Crypto.IntelAES

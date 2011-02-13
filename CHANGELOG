@@ -1,7 +1,8 @@
 Note, in addition to nice, tidy CHANGELOG, there's also a verbose DEVLOG below.
 
-Version 0.1.2 -- Unfortunate version bump to fix .cabal description.
-Version 0.1.1 -- Initial release
+Version 0.1.2.1 -- Fixed duplicate DBRG depend in .cabal
+Version 0.1.2   -- Unfortunate version bump to fix .cabal description.
+Version 0.1.1   -- Initial release
 
 --------------------------------------------------------------------------------
    DEVLOG:
