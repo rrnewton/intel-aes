@@ -1,4 +1,6 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+-- RRN: TEMPORARILY DUPLICATED FROM Crypto PACKAGE!!!
+
+{-# LANGUAGE TypeSynonymInstances, PackageImports #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Codec.Encryption.AES
@@ -21,7 +23,7 @@ module Codec.Encryption.AES (
    encrypt, decrypt, AESKey) where
 
 import Codec.Encryption.AESAux
-import Data.LargeWord
+import "largeword" Data.LargeWord
 import Codec.Utils
 import Data.Word
 import Data.Bits

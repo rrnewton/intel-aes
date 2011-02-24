@@ -1,4 +1,4 @@
-
+{-# LANGUAGE PackageImports #-}
 {- | 
 
    This module includes two all-haskell implementations of Burton
@@ -24,9 +24,7 @@ import System.Random (RandomGen, next, split)
 import Crypto.Random.DRBG ()
 
 import Codec.Encryption.AES (encrypt)
-import Data.LargeWord
-
--- import Debug.Trace
+import "largeword" Data.LargeWord
 
 --------------------------------------------------------------------------------
 -- Reference implementation.

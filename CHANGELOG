@@ -1,8 +1,9 @@
 Note, in addition to nice, tidy CHANGELOG, there's also a verbose DEVLOG below.
 
-Version 0.1.2.1 -- Fixed duplicate DBRG depend in .cabal
+Version 0.1.2.1 -- Fixed duplicate DRBG depend in .cabal
 Version 0.1.2   -- Unfortunate version bump to fix .cabal description.
 Version 0.1.1   -- Initial release
+Version 0.1.2.2 -- Removed LargeWord implementation.  It's now in its own module.
 
 --------------------------------------------------------------------------------
    DEVLOG:
@@ -10,7 +11,7 @@ Version 0.1.1   -- Initial release
 
 [2011.01.28] {unexpected performance bump}
 
-Note: when I duplicated part of the Crypto I also saw a little
+Note: when I duplicated part of the Crypto package (LargeWord) I also saw a little
 performance bump on my 3.33 ghz nehalem desktop IN SPITE of the fact
 that I had tweaked and reinstalled my system's Crypto library, taking
 care to compile it with -O2.  Better inlining?

@@ -22,6 +22,7 @@ module Codec.Crypto.IntelAES
     (
       mkAESGen,
       CompoundAESRNG(), 
+      supportsAESNI,
      -- Plus, instances exported of course.
       testIntelAES
     )
@@ -64,6 +65,9 @@ mkAESGen int = convertCRG gen
 -- foreign import ccall unsafe "iaesni.h" check_for_aes_instructions :: IO Bool
 foreign import ccall unsafe "iaesni.h" check_for_aes_instructions :: Bool
 
+-- | Does the machine support AESNI instructions?
+supportsAESNI :: Bool
+supportsAESNI = check_for_aes_instructions
 
 {-# INLINE mapRight #-}
 mapRight fn x@(Left _) = x
@@ -78,7 +82,7 @@ instance CryptoRandomGen CompoundCRG where
 --  newGen :: B.ByteString -> Either GenError CompoundCRG
   newGen = 
 --     if unsafeDupablePerformIO check_for_aes_instructions
-     trace ("Checked for AES instructions: "++ show check_for_aes_instructions)$
+--     trace ("Checked for AES instructions: "++ show check_for_aes_instructions)$
      if check_for_aes_instructions
      -- Ick, boilerplate:
      then \bytes -> case newGen bytes of Left err  -> Left err

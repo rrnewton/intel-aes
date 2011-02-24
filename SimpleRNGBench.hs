@@ -19,7 +19,8 @@ import qualified Codec.Crypto.ConvertRNG           as CR
 import System.Exit (exitSuccess, exitFailure)
 import System.Environment
 import System.Random
-import System.Posix    (sleep)
+-- import System.PosixCompat (sleep)
+import System.Posix (sleep)
 import System.CPUTime  (getCPUTime)
 -- import Data.Time.Clock (diffUTCTime)
 import System.CPUTime.Rdtsc
@@ -339,9 +340,12 @@ main = do
        timeit th freq "Gladman"                 mkAESGen_gladman
        timeit th freq "Compound gladman/intel"  IA.mkAESGen
 --       timeit th freq "Svein's Gladman package" (const svein)
-       timeit th freq "IntelAES inefficient"    NI.mkAESGen0
-       timeit th freq "IntelAES"                NI.mkAESGen
 
+       if IA.supportsAESNI then do 
+	  timeit th freq "IntelAES inefficient"    NI.mkAESGen0
+	  timeit th freq "IntelAES"                NI.mkAESGen
+         else 
+          putStrLn$ "   [Skipping AESNI-only tests, current machine does not support these instructions.]"
 
        when (not$ NoC `elem` opts) $ do
 	  putStrLn$ "  Comparison to C's rand():"

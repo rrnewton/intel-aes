@@ -1,3 +1,7 @@
+-- RRN: TEMPORARILY DUPLICATED FROM Crypto PACKAGE!!!
+
+
+
 -- | Advanced Encryption System (specification can be found in FIPS-197)
 module Codec.Encryption.AESAux(
 	aes128Encrypt,
