@@ -1,5 +1,5 @@
 Name:           intel-aes
-Version:        0.1.2.2
+Version:        0.1.2.3
 
 License:                BSD3
 License-file:           LICENSE
@@ -85,7 +85,8 @@ source-repository head
 ----------------------------------------------------------------------------------------------------
 library
   build-depends:  base >= 4 && < 5, random, DRBG, split, process, haskell98, time,
-                  crypto-api, bytestring, cereal, tagged, largeword
+                  crypto-api >= 0.5, 
+                  bytestring, cereal, tagged, largeword
 
   exposed-modules:  Codec.Encryption.BurtonRNGSlow
                  ,  Codec.Crypto.IntelAES
@@ -110,7 +111,8 @@ library
 -- ----------------------------------------------------------------------------------------------------
 Executable benchmark-intel-aes-rng
   Main-is:        SimpleRNGBench.hs
-  Build-Depends:  base >= 4 && < 5, split, rdtsc, random, crypto-api, DRBG
+  Build-Depends:  base >= 4 && < 5, split, rdtsc, random, DRBG
+                , crypto-api >= 0.5
 --                , unix-compat
                 , unix
                 , tagged, cereal, bytestring, process, haskell98, time, largeword

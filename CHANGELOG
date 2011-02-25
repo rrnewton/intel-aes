@@ -4,6 +4,7 @@ Version 0.1.2.1 -- Fixed duplicate DRBG depend in .cabal
 Version 0.1.2   -- Unfortunate version bump to fix .cabal description.
 Version 0.1.1   -- Initial release
 Version 0.1.2.2 -- Removed LargeWord implementation.  It's now in its own module.
+Version 0.1.2.3 -- Updated to work with CryptoAPI >= 0.5
 
 --------------------------------------------------------------------------------
    DEVLOG:

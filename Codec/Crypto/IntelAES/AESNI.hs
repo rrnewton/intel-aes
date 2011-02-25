@@ -164,13 +164,14 @@ template core keysize ctx@(IntelAES {aesKeyRaw}) plaintext =
 
 instance BlockCipher (IntelAES N128) where
 	blockSize    = Tagged 128
+	keyLength    = Tagged 128
 	encryptBlock = template intel_AES_enc128 16
 	decryptBlock = template intel_AES_dec128 16
         -- What's the right behavior here?  Currently this refuses to
         -- generate keys if given an insufficient # of bytes.
 	buildKey bytes | B.length bytes >= 16 = Just$ newCtx bytes
         buildKey _     | otherwise            = Nothing
-	keyLength (IntelAES {aesKeyRaw}) = B.length aesKeyRaw * 8 -- bits
+--	keyLength (IntelAES {aesKeyRaw}) = B.length aesKeyRaw * 8 -- bits
 
 instance Serialize (IntelAES N128) where
 	get = getGeneral 16
@@ -179,21 +180,24 @@ instance Serialize (IntelAES N128) where
 -- <boilerplate>
 instance BlockCipher (IntelAES N192) where
 	blockSize    = Tagged 192
+	keyLength    = Tagged 192
 	encryptBlock = template intel_AES_enc192 24
 	decryptBlock = template intel_AES_dec192 24
 	buildKey bytes | B.length bytes >= 24 = Just$ newCtx bytes
         buildKey _     | otherwise            = Nothing
-	keyLength (IntelAES {aesKeyRaw}) = B.length aesKeyRaw
+--	keyLength (IntelAES {aesKeyRaw}) = B.length aesKeyRaw
+
 instance Serialize (IntelAES N192) where
 	get = getGeneral 24
 	put = putByteString . aesKeyRaw
 instance BlockCipher (IntelAES N256) where
-	blockSize    = Tagged 192
+	blockSize    = Tagged 256
+	keyLength    = Tagged 256
 	encryptBlock = template intel_AES_enc256 32
 	decryptBlock = template intel_AES_dec256 32
 	buildKey bytes | B.length bytes >= 32 = Just$ newCtx bytes
         buildKey _     | otherwise            = Nothing
-	keyLength (IntelAES {aesKeyRaw}) = B.length aesKeyRaw
+--	keyLength (IntelAES {aesKeyRaw}) = B.length aesKeyRaw
 instance Serialize (IntelAES N256) where
 	get = getGeneral 32
 	put = putByteString . aesKeyRaw

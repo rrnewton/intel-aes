@@ -80,24 +80,24 @@ newCtx key = do
 
 instance BlockCipher (AES N128) where
 	blockSize = Tagged 128
+	keyLength = Tagged 128
 	encryptBlock = aesEnc
 	decryptBlock = aesDec
 	buildKey = aesBK 128
-	keyLength = aesKL
 
 instance BlockCipher (AES N192) where
-	blockSize = Tagged 128
+	blockSize = Tagged 192
+	keyLength = Tagged 192
 	encryptBlock = aesEnc
 	decryptBlock = aesDec
 	buildKey = aesBK 192
-	keyLength = aesKL
 
 instance BlockCipher (AES N256) where
-	blockSize = Tagged 128
+	blockSize = Tagged 256
+	keyLength = Tagged 256
 	encryptBlock = aesEnc
 	decryptBlock = aesDec
 	buildKey = aesBK 256
-	keyLength = aesKL
 
 
 aesEnc :: AES n -> B.ByteString -> B.ByteString
