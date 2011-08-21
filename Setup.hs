@@ -79,8 +79,8 @@ patchDesc desc localinfo = do
       -- I'm not sure what the best policy is.  For now I'm adding
       -- BOTH the build dir and the eventual install dir...
       -- This will allow the package to function when it is built-but-not-installed.
-      newO = ("-Wl,-rpath=" ++ libd) : 
-	     ("-Wl,-rpath=" ++ cbitsd) : 
+      newO = ("-Wl,-rpath," ++ libd) :
+	     ("-Wl,-rpath," ++ cbitsd) :
 	     oldO
       cbitsd = root++"/cbits/"
       newlbi = lbi { ldOptions = newO 
@@ -109,11 +109,7 @@ my_preBuild :: Args -> BuildFlags -> IO HookedBuildInfo
 my_preBuild args flags = do 
   putStrLn$ "\n================================================================================"
   let 
-      ext = case Info.os of 
-	      "linux"   -> ".so"
-	      "mac"     -> ".dylib"
-	      "windows" -> ".dll"
-	      _         -> error$ "Unexpected "
+      ext = libext
       cached_so = "./cbits/prebuilt/libintel_aes_"++ Info.os ++"_"++ Info.arch ++ ext
       dest = "./cbits/libintel_aes"++ext
   e <- doesFileExist cached_so
@@ -147,11 +143,18 @@ my_install desc linfo hooks flags = do
   putStrLn$ "\n================================================================================"
   desc2 <- patchDesc desc linfo
   libd <- readFile tmpfile 
-  let dest = (libd ++ "/libintel_aes.so")
+  let dest = (libd ++ "/libintel_aes" ++ libext)
   putStrLn$ "  [intel-aes] Copying shared library to: " ++ show dest
   system$ "mkdir -p "++ libd -- NONPORTABLE
-  copyFile "./cbits/libintel_aes.so" dest
+  copyFile ("./cbits/libintel_aes"++libext) dest
   putStrLn$ "  [intel-aes] Done copying."
   -- removeFile tmpfile -- Might install more than once, right?
   putStrLn$ "================================================================================\n"
   (instHook simpleUserHooks) desc2 linfo hooks flags
+
+libext :: String
+libext = case Info.os of
+	      "linux"   -> ".so"
+	      "darwin"  -> ".dylib"
+	      "windows" -> ".dll"
+	      _         -> error$ "Unexpected OS: " ++ (Info.os)
