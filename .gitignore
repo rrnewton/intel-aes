@@ -1,0 +1,10 @@
+*.swp
+*.swo
+.temp.install_dir.txt
+cbits/libintel_aes.a
+cbits/libintel_aes.dylib
+cbits/libintel_aes.so
+cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/obj/
+cbits/Intel_AESNI_Sample_Library_v1.0/intel_aes_lib/lib/
+dist/
+

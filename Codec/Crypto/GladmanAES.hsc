@@ -18,7 +18,8 @@ import Crypto.Modes
 import Crypto.Classes
 import Crypto.Types
 import Data.Tagged
-import Data.Serialize
+-- use import list for Serialize to avoid conflict with `ensure` function
+import Data.Serialize(Serialize, Get, get, put, getByteString, putByteString)
 
 import Foreign
 import Control.Applicative

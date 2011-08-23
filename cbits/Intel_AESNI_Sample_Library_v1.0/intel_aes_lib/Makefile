@@ -1,5 +1,6 @@
 
 UNAME=$(shell uname -m)
+OS:=$(shell uname -s)
 
 # Must be 86 (for 32bit compiler) or 64 (for 64bit compiler)
 ARCH=64
@@ -7,9 +8,14 @@ ARCH=64
 # Must be 32 or 64:
 SZ=64
 #SZ=32
+LIBDIR=lib/x$(ARCH)
 
-STATIC=lib/x$(ARCH)/libintel_aes.a
-DYNAMIC=lib/x$(ARCH)/libintel_aes.so
+STATIC=libintel_aes.a
+ifeq (Darwin,$(OS))
+DYNAMIC=libintel_aes.dylib
+else
+DYNAMIC=libintel_aes.so
+endif
 
 SRC= src/intel_aes.c \
      asm/x$(ARCH)/iaesx$(ARCH).s \
@@ -22,18 +28,27 @@ OBJ= obj/x$(ARCH)/intel_aes.o \
 # GCC=gcc -m32
 GCC=gcc 
 YASM=yasm
+ifeq (Darwin,$(OS))
+YASMFLAGS= -D__linux__ -g null -f macho$(SZ) --prefix=_
+L=libtool
+LFLAGS=-dynamic -install_name @rpath/$(DYNAMIC) -macosx_version_min 10.5 -lSystem
+else
 YASMFLAGS= -D__linux__ -g dwarf2 -f elf$(SZ) 
+L=gcc
+LFLAGS=-shared -dynamic
+endif
 
-all: $(STATIC) $(DYNAMIC)
-	cp lib/x$(ARCH)/* ../../
+all: $(LIBDIR)/$(STATIC) $(LIBDIR)/$(DYNAMIC)
+	cp $(LIBDIR)/* ../../
 
-$(STATIC): $(OBJ)
-	@mkdir -p lib/x$(ARCH)
+$(LIBDIR)/$(STATIC): $(OBJ)
+	@mkdir -p $(LIBDIR)
 	ar -r $@ $(OBJ)
 
-$(DYNAMIC): $(OBJ)
-	@mkdir -p lib/x$(ARCH)
-	$(GCC) -shared -dynamic  -o $(DYNAMIC) $(OBJ)
+$(LIBDIR)/$(DYNAMIC): $(OBJ)
+	@mkdir -p $(LIBDIR)
+	$(L) $(LFLAGS) -o $(DYNAMIC) $(OBJ)
+	mv $(DYNAMIC) $(LIBDIR)
 
 obj/x$(ARCH)/do_rdtsc.o:  asm/x$(ARCH)/do_rdtsc.s
 	@mkdir -p obj/x$(ARCH)
@@ -48,4 +63,4 @@ obj/x$(ARCH)/intel_aes.o:  src/intel_aes.c
 	$(GCC) -fPIC -O3 -g -Iinclude/ -c $< -o $@
 
 clean:
-	rm -f $(STATIC) $(DYNAMIC) $(OBJ)
+	rm -f $(STATIC) $(DYNAMIC) $(LIBDIR)/$(STATIC) $(LIBDIR)/$(DYNAMIC) $(OBJ)
