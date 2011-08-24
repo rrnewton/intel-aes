@@ -1,5 +1,8 @@
 Name:           intel-aes
-Version:        0.1.2.3
+Version:        0.1.2.4
+
+-- 0.1.2.4  -- minor bump for David (dmpots) Mac OS support
+-- 
 
 License:                BSD3
 License-file:           LICENSE
@@ -50,7 +53,7 @@ Description:
 Category: Cryptography
 Cabal-Version: >=1.8
 Tested-With: GHC == 7.0.1
--- Portability:            Untested on Windows.
+-- Portability: Works on Linux, Mac OS.  Untested on Windows.
 
 build-type: Custom
 
