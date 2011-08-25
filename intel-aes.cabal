@@ -111,6 +111,9 @@ library
   -- The gladman sources are straightforward and can be built by Cabal (unlike the intel C/asm)
   C-sources: cbits/gladman/aescrypt.c, cbits/gladman/aeskey.c, cbits/gladman/aestab.c,
              cbits/gladman/aes_modes.c, cbits/gladman/ctr_inc.c
+
+  -- Include this script as well:
+  -- data-files: benchmark-intel-aes-rng.hs
   Include-Dirs: cbits
 
 -- ----------------------------------------------------------------------------------------------------
