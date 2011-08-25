@@ -1,8 +1,8 @@
 Name:           intel-aes
-Version:        0.1.2.4
+Version:        0.2.0.0
 
 -- 0.1.2.4  -- minor bump for David (dmpots) Mac OS support
--- 
+-- 0.2.0.0  -- major bump for API reorg
 
 License:                BSD3
 License-file:           LICENSE
@@ -115,4 +115,5 @@ library
 
 -- ----------------------------------------------------------------------------------------------------
 
---  cabal haddock --hoogle --executables --hyperlink-source --haddock-options="--html"
+-- Example documentation generation command:
+--    cabal haddock --hoogle --executables --hyperlink-source --haddock-options="--html"

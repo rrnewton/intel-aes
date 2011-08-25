@@ -15,7 +15,7 @@
 @
 
     Specifically, a block cipher can be converted to generate a
-    @CryptoRandomGen@, which in turn can be converted to provide the
+    'CryptoRandomGen', which in turn can be converted to provide the
     @RandomGen@ interface.
 
   -}
@@ -72,7 +72,7 @@ import Foreign.Storable
 
 
 -- | Converting CryptoRandomGen to RandomGen.
---   This naive version is probably pretty inefficent:
+--   This naive version is inefficent and should not be used in most cases.
 data CRGtoRG_Unbuffered a = CRGtoRG_Unbuffered a
 instance CryptoRandomGen g => RandomGen (CRGtoRG_Unbuffered g) where 
    next  (CRGtoRG_Unbuffered g) = 
@@ -98,8 +98,9 @@ bytes_in_int = (round $ 1 + logBase 2 (fromIntegral (maxBound :: Int)))  `quot` 
 -- steps = 128 `quot` bits_in_int
 
 ------------------------------------------------------------
--- | Converting CryptoRandomGen to RandomGen.
---   Keep a buffer of random bits and an index into that buffer.
+-- | Convert CryptoRandomGen to RandomGen.  This version is buffered.
+--   That is, it fills a sizable buffer with random bits in bulk and
+--   advances an index into that buffer as random bits are requested.
 data CRGtoRG a = CRGtoRG a 
     {-#UNPACK#-}!         (FP.ForeignPtr Int)
     {-#UNPACK#-}!         Int
@@ -139,8 +140,8 @@ bufsize = 256
 -- Again there's the tension with UndecidableInstances vs explicit lifting.
 
 -- | A BlockCipher can generate random numbers.
---   When lifting we include a counter which increments as random numbers are generated:
 data BCtoCRG a = BCtoCRG a Word64
+-- When lifting we include a counter which increments as random numbers are generated.
 
 instance BlockCipher x => CryptoRandomGen (BCtoCRG x) where 
   newGen  bytes = case buildKey bytes of Nothing -> Left NotEnoughEntropy 

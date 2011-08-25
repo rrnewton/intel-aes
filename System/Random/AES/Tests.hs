@@ -1,8 +1,9 @@
 {-# LANGUAGE BangPatterns, ScopedTypeVariables, ForeignFunctionInterface #-}
 
-{- | A simple script to do some very basic timing of the RNGs.  This
-   module is here to be part of the same compilation unit as the
-   library itself (e.g. to access hidden modules).
+{- | A simple script to do some very basic timing of 'System.Random.RandomGen's.  
+
+   This module is located here to be part of the same compilation unit
+   as the library itself (e.g. to access hidden modules).
 
    TODO: It is important that we also run established stastical tests on
    these RNGs a some point...

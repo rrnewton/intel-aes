@@ -6,12 +6,18 @@
      Stability   :  experimental
      Portability :  Mac OS, Linux, Untested on Windows
 
-     This module provides a random number generator based on AES both
-     using the System.Random.RandomGen interface and the
-     Codec.Crypto.Random one.  The AES implementation that will test
-     the CPU ID and use hardware acceleration where available,
-     otherwise it will fall back to Dr. Brian Gladman's software
-     implementation.
+     This module provides cryptographic-strength random number
+     generators based on AES.
+
+     The generators are exposed both using the
+     'System.Random.RandomGen' interface and the
+     'Codec.Crypto.CryptoRandomGen' one.
+
+     Internally, this module uses two different AES implementations.
+     If the CPU ID indicates that AESNI instructions are available, it
+     will use an Intel-provided hardware-accelerated implementation,
+     otherwise, it will fall back to Dr. Brian Gladman's well-known
+     software implementation.
 
   -}
 {-# OPTIONS_GHC -fwarn-unused-imports #-}
@@ -53,14 +59,14 @@ newtype AesCRG =
 type AesRG = CRGtoRG AesCRG
 
 -- | Simple function to create a random number generator from an Int,
---   exposing the `System.Random.RandomGen` interface, analogous to
---   `System.Random.newStdGen`.  Only 128-bit encryption is currently
+--   exposing the 'System.Random.RandomGen' interface, analogous to
+--   'System.Random.newStdGen'.  Only 128-bit encryption is currently
 --   provided.
 mkAESGen :: Int -> AesRG
 mkAESGen int = convertCRG (mkAESGenCRG int)
 
 -- | This variant creates an random number generator which exposes the
---   `Crypto.Random.CryptoRandomGen` interface.
+--   'Crypto.Random.CryptoRandomGen' interface.
 mkAESGenCRG :: Int -> AesCRG
 mkAESGenCRG int = gen
    where
