@@ -29,7 +29,7 @@ module Codec.Crypto.IntelAES.AESNI
     , mkAESGen192, mkAESGen256
 
     -- Inefficient version for testing:
-    , mkAESGen0, SimpleAESRNG0
+    , mkAESGen0, SimpleAESRNG_Unbuffered
     , IntelAES, N128, N192, N256
      -- Plus, instances exported of course.
     )
@@ -87,9 +87,9 @@ mkAESGen256 seed = convertCRG gen
 
 
 -- | TEMP: Inefficient version for testing.
-type SimpleAESRNG0 = CRGtoRG0 (BCtoCRG (IntelAES N128))
-mkAESGen0 :: Int -> SimpleAESRNG0
-mkAESGen0 int = CRGtoRG0 gen
+type SimpleAESRNG_Unbuffered = CRGtoRG_Unbuffered (BCtoCRG (IntelAES N128))
+mkAESGen0 :: Int -> SimpleAESRNG_Unbuffered
+mkAESGen0 int = CRGtoRG_Unbuffered gen
  where
   Right (gen :: BCtoCRG (IntelAES N128)) = newGen (B.append halfseed halfseed )
   halfseed = encode word64

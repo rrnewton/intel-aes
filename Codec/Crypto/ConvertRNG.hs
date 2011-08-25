@@ -26,7 +26,7 @@
 module Codec.Crypto.ConvertRNG 
   ( BCtoCRG(..), convertCRG     
   , CRGtoRG()
-  , CRGtoRG0(..) -- Inefficient version for testing...
+  , CRGtoRG_Unbuffered(..) -- Inefficient version for testing...
   )
 where
 
@@ -73,21 +73,21 @@ import Foreign.Storable
 
 -- | Converting CryptoRandomGen to RandomGen.
 --   This naive version is probably pretty inefficent:
-data CRGtoRG0 a = CRGtoRG0 a
-instance CryptoRandomGen g => RandomGen (CRGtoRG0 g) where 
-   next  (CRGtoRG0 g) = 
+data CRGtoRG_Unbuffered a = CRGtoRG_Unbuffered a
+instance CryptoRandomGen g => RandomGen (CRGtoRG_Unbuffered g) where 
+   next  (CRGtoRG_Unbuffered g) = 
 --       case genBytes (max bytes_in_int (keyLength g `quot` 8)) g of 
        case genBytes bytes_in_int g of 
          Left err -> error$ "CryptoRandomGen genBytes error: " ++ show err
 	 Right (bytes,g') -> 
            case decode bytes of 
 	      Left err -> error$ "Deserialization error:"++ show err
-	      Right n -> (n, CRGtoRG0 g')
+	      Right n -> (n, CRGtoRG_Unbuffered g')
 	     
-   split (CRGtoRG0 g) = 
+   split (CRGtoRG_Unbuffered g) = 
        case splitGen g of 
          Left err      -> error$ "CryptoRandomGen splitGen error:"++ show err
-	 Right (g1,g2) -> (CRGtoRG0 g1, CRGtoRG0 g2)
+	 Right (g1,g2) -> (CRGtoRG_Unbuffered g1, CRGtoRG_Unbuffered g2)
 
 -- Another option would be to amortize overhead by generating a large
 -- buffer of random bits at once.

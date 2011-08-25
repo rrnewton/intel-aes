@@ -89,19 +89,22 @@ source-repository head
 library
   build-depends:  base >= 4 && < 5, random, DRBG, split, process, haskell98, time,
                   crypto-api >= 0.5, 
-                  bytestring, cereal, tagged, largeword
+                  bytestring, cereal, tagged, largeword,
+                  -- For AES.Tests only:
+                  rdtsc, unix
 
-  exposed-modules:  Codec.Encryption.BurtonRNGSlow
-                 ,  Codec.Crypto.IntelAES
-                 ,  Codec.Crypto.IntelAES.AESNI
+  exposed-modules: 
+                    System.Random.AES
                  ,  Codec.Crypto.ConvertRNG
---                 ,  Codec.Crypto.IntelAES.GladmanAES
-                 ,  Codec.Crypto.GladmanAES
+                 ,  System.Random.AES.Tests
   other-modules:  
                     Benchmark.BinSearch
                  ,  Codec.Encryption.AES
                  ,  Codec.Encryption.AESAux
                  ,  Codec.Utils
+                 ,  Codec.Encryption.BurtonRNGSlow
+                 ,  Codec.Crypto.IntelAES.AESNI
+                 ,  Codec.Crypto.GladmanAES
   GHC-Options: -O2 
   extra-libraries: intel_aes
 
@@ -110,20 +113,6 @@ library
              cbits/gladman/aes_modes.c, cbits/gladman/ctr_inc.c
   Include-Dirs: cbits
 
-
 -- ----------------------------------------------------------------------------------------------------
-Executable benchmark-intel-aes-rng
-  Main-is:        SimpleRNGBench.hs
-  Build-Depends:  base >= 4 && < 5, split, rdtsc, random, DRBG
-                , crypto-api >= 0.5
---                , unix-compat
-                , unix
-                , tagged, cereal, bytestring, process, haskell98, time, largeword
-                , intel-aes
-  GHC-Options:    -O2 -threaded -rtsopts 
-  C-sources:	   cbits/c_test.c
-  Include-dirs:    cbits
-
-
 
 --  cabal haddock --hoogle --executables --hyperlink-source --haddock-options="--html"

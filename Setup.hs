@@ -39,6 +39,7 @@ my_clean desc () hooks flags = do
   setCurrentDirectory "./cbits/"
   system "make clean"
   setCurrentDirectory ".."
+  system "rm -f benchmark-intel-aes-rng"
   putStrLn$ "  [intel-aes] Done.  Now running normal cabal clean action.\n"
   (cleanHook simpleUserHooks) desc () hooks flags
 
@@ -88,7 +89,7 @@ patchDesc desc localinfo = do
       -- Whew... nested record updates are painful:
       desc3 = desc { library = Just (lib { libBuildInfo = newlbi})}
 
-  putStrLn$ "  [intel-aes] Modified package info. " 
+  putStrLn$ "  [intel-aes] Modified package description structure with extra options. " 
   return desc3
 
 

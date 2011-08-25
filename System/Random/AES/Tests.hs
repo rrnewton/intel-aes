@@ -1,28 +1,26 @@
-#!/usr/bin/env runhaskell
 {-# LANGUAGE BangPatterns, ScopedTypeVariables, ForeignFunctionInterface #-}
--- | A simple script to do some very basic timing of the RNGs.
 
---   It is important that we also run established stastical tests on
---   these RNGs a some point...
+{- | A simple script to do some very basic timing of the RNGs.  This
+   module is here to be part of the same compilation unit as the
+   library itself (e.g. to access hidden modules).
 
-module Main where
+   TODO: It is important that we also run established stastical tests on
+   these RNGs a some point...
+ -}
 
-import qualified Codec.Encryption.BurtonRNGSlow as BS
+module System.Random.AES.Tests (runTests) where
 
---import qualified Codec.Crypto.IntelAES.GladmanAES  as GA
+import qualified System.Random.AES                 as IA
+import qualified Codec.Encryption.BurtonRNGSlow    as BS
 import qualified Codec.Crypto.GladmanAES           as GA
 import qualified Codec.Crypto.IntelAES.AESNI       as NI
-import qualified Codec.Crypto.IntelAES             as IA
 import qualified Codec.Crypto.ConvertRNG           as CR
--- import qualified Codec.Crypto.AES.Random        as Svein
 
 import System.Exit (exitSuccess, exitFailure)
 import System.Environment
 import System.Random
--- import System.PosixCompat (sleep)
 import System.Posix (sleep)
 import System.CPUTime  (getCPUTime)
--- import Data.Time.Clock (diffUTCTime)
 import System.CPUTime.Rdtsc
 import System.Console.GetOpt
 
@@ -60,8 +58,8 @@ mkAESGen_gladman int = CR.convertCRG gen
   word64 = fromIntegral int :: Word64
 
 
-mkAESGen_gladman0 :: Int -> CR.CRGtoRG0 (CR.BCtoCRG (GA.AES GA.N128))
-mkAESGen_gladman0 int = CR.CRGtoRG0 gen
+mkAESGen_gladman_unbuffered :: Int -> CR.CRGtoRG_Unbuffered (CR.BCtoCRG (GA.AES GA.N128))
+mkAESGen_gladman_unbuffered int = CR.CRGtoRG_Unbuffered gen
  where
   Right (gen :: CR.BCtoCRG (GA.AES GA.N128)) = newGen (B.append halfseed halfseed )
   halfseed = encode word64
@@ -298,13 +296,12 @@ options =
    , Option ['t']  ["test"]  (NoArg Test)  "run some basic tests"
    ]
 
-  
-main = do 
+runTests = do 
    argv <- getArgs
    let (opts,_,other) = getOpt Permute options argv
 
+   putStrLn$ "Does machine supports AESNI?: " ++ show IA.supportsAESNI
    when (Test `elem` opts)$ do
-       IA.testIntelAES
        NI.testAESNI
        exitSuccess
 
@@ -334,15 +331,15 @@ main = do
        timeit th freq "System.Random stdGen" mkStdGen
        timeit th freq "PureHaskell/reference" BS.mkBurtonGen_reference
        timeit th freq "PureHaskell"           BS.mkBurtonGen
---       timeit th freq "Gladman inefficient"     GA.mkAESGen0
+--       timeit th freq "Gladman unbuffered"     GA.mkAESGen0
 --       timeit th freq "Gladman"                 GA.mkAESGen
-       timeit th freq "Gladman inefficient"     mkAESGen_gladman0
-       timeit th freq "Gladman"                 mkAESGen_gladman
+       timeit th freq "Gladman unbuffered"     mkAESGen_gladman_unbuffered
+       timeit th freq "Gladman"                mkAESGen_gladman
        timeit th freq "Compound gladman/intel"  IA.mkAESGen
 --       timeit th freq "Svein's Gladman package" (const svein)
 
        if IA.supportsAESNI then do 
-	  timeit th freq "IntelAES inefficient"    NI.mkAESGen0
+	  timeit th freq "IntelAES unbuffered"    NI.mkAESGen0
 	  timeit th freq "IntelAES"                NI.mkAESGen
          else 
           putStrLn$ "   [Skipping AESNI-only tests, current machine does not support these instructions.]"
