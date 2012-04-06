@@ -1,8 +1,10 @@
 Name:           intel-aes
-Version:        0.2.0.0
+Version:        0.2.1.1
 
 -- 0.1.2.4  -- minor bump for David (dmpots) Mac OS support
 -- 0.2.0.0  -- major bump for API reorg
+-- 0.2.1.0  -- include prebuilts and tested with 6.12, 7.0, 7.2
+-- 0.2.1.1  -- removed deps on c_test.c
 
 License:                BSD3
 License-file:           LICENSE
@@ -11,7 +13,7 @@ Maintainer:		Ryan Newton <rrnewton@gmail.com>
 Author:			Ryan Newton <rrnewton@gmail.com>, 
                         Svein Ove Aas <svein.ove@aas.no>, Thomas M. DuBuisson <thomas.dubuisson@gmail.com>
 Copyright:              Copyright (c) 2011 Intel Corporation
-Synopsis:               Hardware accelerated AES encryption and RNG.
+Synopsis:               Hardware accelerated AES encryption and Random Number Generation.
 HomePage:               https://github.com/rrnewton/intel-aes/wiki
 Description: 
   AES encryption with optional hardware acceleration.  Plus,
@@ -32,7 +34,7 @@ Description:
   problems. A manually built copy of the documentation can be found
   at:
 
-    <http://people.csail.mit.edu/newton/intel-aes-doc/>
+    <http://cs.indiana.edu/~rrnewton/intel-aes-doc/>
 
 -- Here are some example results from an Intel X5680 processor.
 
@@ -79,6 +81,11 @@ extra-source-files:
     , cbits/gladman/brg_endian.h, cbits/gladman/brg_types.h, cbits/gladman/aes.txt
     , cbits/gladman/aes_via_ace.h, cbits/gladman/ctr_inc.h
 
+    , benchmark-intel-aes-rng.hs
+    , cbits/prebuilt/libintel_aes_linux_x86_64.so
+    , cbits/prebuilt/libintel_aes_darwin_x86_64.dylib
+
+
 
 source-repository head
   type:     git
@@ -87,7 +94,7 @@ source-repository head
 
 ----------------------------------------------------------------------------------------------------
 library
-  build-depends:  base >= 4 && < 5, random, DRBG, split, process, haskell98, time,
+  build-depends:  base >= 4 && < 5, random, DRBG, split, process, time,
                   crypto-api >= 0.5, 
                   bytestring, cereal, tagged, largeword,
                   -- For AES.Tests only:

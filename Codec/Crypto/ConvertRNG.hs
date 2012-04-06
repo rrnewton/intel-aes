@@ -149,12 +149,12 @@ instance BlockCipher x => CryptoRandomGen (BCtoCRG x) where
   genSeedLength = Tagged 128
 
   -- If this is called for less than blockSize data there's some waste but it should work.
-  genBytes req (BCtoCRG (bcgen :: k) counter) = 
+  genBytes req (BCtoCRG (bcgen :: x) counter) = 
       -- What's the most efficient way to do this?
       unsafePerformIO $ do  -- Potentially heavyweight... not allowing dupable.
 --      unsafeDupablePerformIO $ do
 	-- Number of times to stamp out the counter:
-        let bsize = untag (blockSizeBytes :: Tagged k ByteLength)
+        let bsize = untag (blockSizeBytes :: Tagged x ByteLength)
 	    numstamps = (req + 7) `quot` 8
 	    numblocks = (req + bsize - 1) `quot` bsize
 	    total     = max (numstamps * 8) (numblocks * bsize)

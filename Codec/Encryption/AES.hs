@@ -1,6 +1,6 @@
 -- RRN: TEMPORARILY DUPLICATED FROM Crypto PACKAGE!!!
 
-{-# LANGUAGE TypeSynonymInstances, PackageImports #-}
+{-# LANGUAGE TypeSynonymInstances, PackageImports, FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Codec.Encryption.AES

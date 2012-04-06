@@ -21,7 +21,7 @@
 
   -}
 {-# OPTIONS_GHC -fwarn-unused-imports #-}
-{-# LANGUAGE ForeignFunctionInterface, CPP, ScopedTypeVariables  #-}
+{-# LANGUAGE ForeignFunctionInterface, CPP, ScopedTypeVariables #-}
 
 module System.Random.AES
     (

@@ -34,7 +34,6 @@ import Control.Monad
 import Data.Time.Clock -- Not in 6.10
 import Data.List
 import Data.IORef
-import System
 import System.IO
 import System.Cmd
 import System.Exit

@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, ScopedTypeVariables, ForeignFunctionInterface #-}
+{-# LANGUAGE BangPatterns, ScopedTypeVariables, ForeignFunctionInterface, CPP #-}
 
 {- | A simple script to do some very basic timing of 'System.Random.RandomGen's.  
 
@@ -73,7 +73,7 @@ mkAESGen_gladman_unbuffered int = CR.CRGtoRG_Unbuffered gen
 -- I cannot *believe* there is not a standard call or an
 -- easily-findable hackage library supporting locale-based printing of
 -- numbers. [2011.01.28]
-commaint :: Integral a => a -> String
+commaint :: (Show a, Integral a) => a -> String
 commaint n = 
    reverse $
    concat $
@@ -164,9 +164,11 @@ instance RandomGen NoopRNG where
 type Kern = Int -> Ptr Int -> IO ()
 
 -- [2011.01.28] Changing this to take "count" and "accumulator ptr" as arguments:
+#ifdef CTEST
 foreign import ccall "cbits/c_test.c" blast_rands :: Kern
 foreign import ccall "cbits/c_test.c" store_loop  :: Kern
-foreign import ccall unsafe "stdlib.hs" rand :: IO Int
+#endif
+foreign import ccall unsafe "" rand :: IO Int
 
 loop2 :: IORef Int -> IO ()
 loop2 !counter = 
@@ -347,8 +349,10 @@ runTests = do
 
        when (not$ NoC `elem` opts) $ do
 	  putStrLn$ "  Comparison to C's rand():"
+#ifdef CTEST
 	  time_c2 th freq "ptr store in C loop"   store_loop
 	  time_c2 th freq "rand/store in C loop"  blast_rands
+#endif
 	  time_c2 th freq "rand in Haskell loop" (\n ptr -> forM_ [1..n]$ \_ -> rand )
 	  time_c2 th freq "rand/store in Haskell loop"  (\n ptr -> forM_ [1..n]$ \_ -> do n <- rand; poke ptr n )
 	  return ()

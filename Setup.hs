@@ -118,7 +118,7 @@ my_preBuild args flags = do
       putStrLn$ "  [intel-aes] Using prebuilt dynamic library: "++ cached_so
       copyFile cached_so dest
       putStrLn$ "  [intel-aes] Done copying into position: "++ dest
-  else do     
+   else do     
       putStrLn$ "  [intel-aes] Running Makefile to build C/asm source..."
       rootdir <- getCurrentDirectory 
       setCurrentDirectory "./cbits/"
