@@ -1,10 +1,11 @@
 Name:           intel-aes
-Version:        0.2.1.1
+Version:        0.2.1.2
 
 -- 0.1.2.4  -- minor bump for David (dmpots) Mac OS support
 -- 0.2.0.0  -- major bump for API reorg
 -- 0.2.1.0  -- include prebuilts and tested with 6.12, 7.0, 7.2
 -- 0.2.1.1  -- removed deps on c_test.c
+-- 0.2.1.2  -- bump for GHC 7.4.1 
 
 License:                BSD3
 License-file:           LICENSE
