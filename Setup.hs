@@ -1,6 +1,10 @@
 #!/usr/bin/env runhaskell
 import Distribution.Simple
 
+-- It has proven very difficult to package this library given that it
+-- depends on assembly code files that we are compiling into a shared
+-- library.
+
 import Distribution.Simple.UserHooks
 import Distribution.Simple.PreProcess
 import Distribution.Simple.Setup
@@ -35,13 +39,19 @@ tmpfile = ".temp.install_dir.txt"
 --------------------------------------------------------------------------------
 my_clean :: PackageDescription -> () -> UserHooks -> CleanFlags -> IO ()
 my_clean desc () hooks flags = do 
-  putStrLn$ "\n  [intel-aes] Running external clean via Makefile"
+  putStrLn$ "\n  [intel-aes] Running external clean (in cbits/) via Makefile"
   setCurrentDirectory "./cbits/"
   system "make clean"
   setCurrentDirectory ".."
   system "rm -f benchmark-intel-aes-rng"
-  putStrLn$ "  [intel-aes] Done.  Now running normal cabal clean action.\n"
-  (cleanHook simpleUserHooks) desc () hooks flags
+-- Having a problem with this: 
+--   Error while removing dist/: dist/setup: removeDirectory: unsatisified constraints (Directory not empty)
+-- Disabling:
+--  putStrLn$ "  [intel-aes] Done.  Now running normal cabal clean action.\n"
+--  (cleanHook simpleUserHooks) desc () hooks flags
+  putStrLn$ "  [intel-aes] Done.  Now removing dist/ directory.\n"  
+  system "rm -rf dist"
+  return ()
 
 --------------------------------------------------------------------------------
 my_conf :: (GenericPackageDescription, HookedBuildInfo) -> ConfigFlags -> IO LocalBuildInfo
@@ -49,6 +59,7 @@ my_conf (gpd,hbi) flags = do
   (confHook simpleUserHooks) (gpd,hbi) flags
 
 --------------------------------------------------------------------------------
+-- Work-around:
 -- we override postConf to keep it from complaining about a missing library:
 my_postConf :: Args -> ConfigFlags -> PackageDescription -> LocalBuildInfo -> IO ()
 my_postConf args conf desc localinfo = do
@@ -63,7 +74,7 @@ my_postConf args conf desc localinfo = do
 
 
 --------------------------------------------------------------------------------
--- Patch a package description for our quirky builda:
+-- Patch a package description for our quirky build:
 patchDesc desc localinfo = do
   let libd  = libdir$ absoluteInstallDirs desc localinfo NoCopyDest
   -- This is lame but I'm not sure how to get the same information at the preBuild step.
@@ -72,8 +83,9 @@ patchDesc desc localinfo = do
   writeFile tmpfile libd
   putStrLn$ "  [intel-aes] Recorded install dir in " ++ show tmpfile
  
+  -- Originally I patched the .cabal itself.
+  -- But the following is better.  It changes the options in-memory:
   root <- getCurrentDirectory
-  -- Let's try a friendlier way to change the options:
   let Just lib = library desc
       lbi  = libBuildInfo lib 
       oldO = ldOptions  lbi
