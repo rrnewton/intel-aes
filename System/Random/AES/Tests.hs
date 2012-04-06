@@ -332,8 +332,8 @@ runTests = do
        putStrLn$ "  First, timing with System.Random interface:"
        timeit th freq "constant zero gen" (const NoopRNG)
        timeit th freq "System.Random stdGen" mkStdGen
-       timeit th freq "PureHaskell/reference" BS.mkBurtonGen_reference
-       timeit th freq "PureHaskell"           BS.mkBurtonGen
+       timeit th freq "PureHaskell AES/reference" BS.mkBurtonGen_reference
+       timeit th freq "PureHaskell AES"           BS.mkBurtonGen
 --       timeit th freq "Gladman unbuffered"     GA.mkAESGen0
 --       timeit th freq "Gladman"                 GA.mkAESGen
        timeit th freq "Gladman unbuffered"     mkAESGen_gladman_unbuffered
