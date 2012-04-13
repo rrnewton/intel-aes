@@ -109,7 +109,7 @@ aesDec k m = unsafePerformIO $ call _aes_ecb_decrypt (decCtx k) m
 
 aesBK :: Int -> B.ByteString -> Maybe (AES n)
 aesBK n bs
-  | B.length bs == n `div` 8 = Just $ unsafePerformIO (newCtx bs)
+  | B.length bs >= n `div` 8 = Just $ unsafePerformIO (newCtx bs)
   | otherwise                = Nothing
 
 aesKL :: AES n -> BitLength
