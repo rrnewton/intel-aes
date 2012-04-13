@@ -146,8 +146,8 @@ data BCtoCRG a = BCtoCRG a Word64
 instance BlockCipher x => CryptoRandomGen (BCtoCRG x) where 
   newGen  bytes = case buildKey bytes of Nothing -> Left NotEnoughEntropy 
 					 Just x  -> Right (BCtoCRG x 0)
-  genSeedLength = let res = keyLength `for` cipherOf res
-                  in Tagged (res `div` 8)
+  genSeedLength = let res = Tagged ((keyLength `for` cipherOf res) `div` 8)
+                  in res
 	where cipherOf :: Tagged (BCtoCRG x) y -> x
 	      cipherOf = undefined
 
