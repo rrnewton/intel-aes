@@ -48,7 +48,7 @@ import qualified Data.ByteString.Internal as BI
 -- import Crypto.Modes
 
 import Crypto.Random (CryptoRandomGen(..), GenError(..), splitGen, genBytes)
-import Crypto.Classes (BlockCipher(..), blockSizeBytes)
+import Crypto.Classes (BlockCipher(..), blockSizeBytes, for)
 import Crypto.Types (ByteLength)
 
 import Control.Monad
@@ -146,7 +146,10 @@ data BCtoCRG a = BCtoCRG a Word64
 instance BlockCipher x => CryptoRandomGen (BCtoCRG x) where 
   newGen  bytes = case buildKey bytes of Nothing -> Left NotEnoughEntropy 
 					 Just x  -> Right (BCtoCRG x 0)
-  genSeedLength = Tagged 128
+  genSeedLength = let res = keyLength `for` cipherOf res
+                  in Tagged (res `div` 8)
+	where cipherOf :: Tagged (BCtoCRG x) y -> x
+	      cipherOf = undefined
 
   -- If this is called for less than blockSize data there's some waste but it should work.
   genBytes req (BCtoCRG (bcgen :: x) counter) = 
