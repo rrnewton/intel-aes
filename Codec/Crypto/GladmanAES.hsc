@@ -10,7 +10,7 @@ module Codec.Crypto.GladmanAES
 	( AES
 	, N128, N192, N256
 	, module Crypto.Classes
-	, module Crypto.Modes) where
+        ) where
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as BI
